@@ -14,6 +14,9 @@ fs = get_file_system()
 with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv") as f:
     data = pd.read_csv(f, dtype=str)
 
+# 2 lines with no description
+data.fillna("", inplace=True)
+
 pipe = pipeline("text-classification", model=MODEL_NAME, device=device)
 
 text = data.loc[:, "description"].to_list()
