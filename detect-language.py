@@ -19,7 +19,7 @@ data.fillna("", inplace=True)
 
 pipe = pipeline("text-classification", model=MODEL_NAME, device=device)
 
-text = data.loc[:, "description"].to_list()
+text = (data.loc[:, "title"] + " " + data.loc[:, "description"]).to_list()
 
 results = pipe(text, top_k=1, truncation=True)
 df = data.merge(pd.DataFrame([d[0] for d in results]), left_index=True, right_index=True)
