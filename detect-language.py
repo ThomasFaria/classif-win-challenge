@@ -6,7 +6,7 @@ import pyarrow as pa
 import torch
 
 MODEL_NAME = "papluca/xlm-roberta-base-language-detection"
-URL_OUT = "s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset_by_lang"
+URL_OUT = "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 fs = get_file_system()
@@ -24,7 +24,7 @@ text = (data.loc[:, "title"] + " " + data.loc[:, "description"]).to_list()
 results = pipe(text, top_k=1, truncation=True)
 df = data.merge(pd.DataFrame([d[0] for d in results]), left_index=True, right_index=True)
 
-df.set_index("id") # TODO
+df.set_index("id")  # TODO
 
 pq.write_to_dataset(
     pa.Table.from_pandas(df),

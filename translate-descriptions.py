@@ -7,8 +7,10 @@ from src.utils.mapping import lang_mapping
 import pyarrow.dataset as ds
 
 MODEL_NAME = "facebook/nllb-200-distilled-1.3B"
-URL_IN = "projet-dedup-oja/challenge_classification/raw-data/wi_dataset_by_lang"
-URL_OUT = "s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset_by_lang_translated"
+URL_IN = "projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
+URL_OUT = (
+    "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang_translated"
+)
 MAX_LENGTH_ENCODED = 512
 MAX_LENGTH_DECODED = 512
 
