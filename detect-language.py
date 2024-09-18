@@ -23,7 +23,8 @@ text = (data.loc[:, "title"] + " " + data.loc[:, "description"]).to_list()
 
 results = pipe(text, top_k=1, truncation=True)
 df = data.merge(pd.DataFrame([d[0] for d in results]), left_index=True, right_index=True)
-df.set_index("id")
+
+df.set_index("id") # TODO
 
 pq.write_to_dataset(
     pa.Table.from_pandas(df),
