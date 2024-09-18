@@ -12,3 +12,8 @@ def get_file_system() -> s3fs.S3FileSystem:
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         #       token=os.environ["AWS_SESSION_TOKEN"],
     )
+
+
+def split_into_batches(list, batch_size):
+    # Create sublists of size `batch_size` from `list`
+    return [list[i : i + batch_size] for i in range(0, len(list), batch_size)]

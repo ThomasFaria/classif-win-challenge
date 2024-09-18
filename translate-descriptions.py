@@ -4,7 +4,10 @@ import torch
 import pyarrow.parquet as pq
 import pyarrow as pa
 from src.utils.mapping import lang_mapping
+from src.utils.data import split_into_batches
 import pyarrow.dataset as ds
+from tqdm import tqdm
+from src.translation.translate import translate_batch
 
 MODEL_NAME = "facebook/nllb-200-distilled-1.3B"
 URL_IN = "projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
@@ -13,6 +16,7 @@ URL_OUT = (
 )
 MAX_LENGTH_ENCODED = 512
 MAX_LENGTH_DECODED = 512
+BATCH_SIZE = 100
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -45,30 +49,24 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
         # We do not perform translation when text is in english
         data.loc[:, "translation"] = data["title"] + " " + data["description"]
     else:
-        txt_to_translate = (data["title"] + " " + data["description"]).to_list()
         print(f"Translating texts from {lang_iso_3} to English")
-        tokenizer.src_lang = lang_iso_3
-        encoded_txt = tokenizer(
-            txt_to_translate,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,  # We assume the most important part of the text is at the beggining
-            max_length=MAX_LENGTH_ENCODED,
-        ).to(device)
-        print(f"The shape of encoded txt is: {encoded_txt["input_ids"].shape}")
+        txt_to_translate = (data["title"] + " " + data["description"]).to_list()
+        batches = split_into_batches(txt_to_translate, BATCH_SIZE)
 
-        generated_tokens = model.generate(
-            **encoded_txt,
-            forced_bos_token_id=tokenizer.convert_tokens_to_ids("eng_Latn"),
-            max_length=MAX_LENGTH_DECODED,  # NLLB-200  was trained with input lengths not exceeding 512 tokens
-        )
-        print(f"The shape of decoded txt is: {generated_tokens.shape}")
+        translations = []
+        for batch in tqdm(batches, total=len(batches)):
+            translated_texts = translate_batch(
+                batch,
+                lang_iso_3,
+                tokenizer,
+                model,
+                device,
+                max_length_encoded=MAX_LENGTH_ENCODED,
+                max_length_decoded=MAX_LENGTH_DECODED,
+            )
+            translations.append(translated_texts)
 
-        results = tokenizer.batch_decode(
-            generated_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False
-        )
-
-        data.loc[:, "translation"] = results
+        data.loc[:, "translation"] = sum(translations, [])  # flatten list of lists
 
     data.set_index("id")  # TODO
 
