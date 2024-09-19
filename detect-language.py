@@ -34,7 +34,7 @@ data["description_clean"] = (
     data["description_clean"]
     .str.replace(eol_regex, " ", regex=True)
     .str.replace(html_regex, " ", regex=True)
-    .str.replace(star_regex, " ", regex=True)
+    .str.replace(star_regex, " Anonymised ", regex=True)
     .str.replace(white_regex, " ", regex=True)
     .str.replace(multispace_regex, " ", regex=True)
     .str.strip()
