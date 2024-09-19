@@ -1,5 +1,7 @@
 from src.utils.data import get_file_system
 from src.detect_lang.detect import detect_language
+from src.utils.mapping import id_881693105_desc
+
 import pandas as pd
 import pyarrow.parquet as pq
 import pyarrow as pa
@@ -21,12 +23,10 @@ fs = get_file_system()
 with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv") as f:
     data = pd.read_csv(f, dtype=str)
 
-# 2 lines with no description
-data.fillna("", inplace=True)
-
-data["description"] = data["description"][data["description"].notna()].apply(html.unescape)
-data["description"] = (
-    data["description"]
+data.loc[data["id"] == "881693105", "description"] = id_881693105_desc
+data["description_clean"] = data["description"][data["description"].notna()].apply(html.unescape)
+data["description_clean"] = (
+    data["description_clean"]
     .str.lower()
     .str.replace(eol_regex, " ", regex=True)
     .str.replace(html_regex, " ", regex=True)
@@ -36,9 +36,10 @@ data["description"] = (
 )
 
 data[["lang", "score"]] = (
-    data["description"][data["description"].notna()].apply(detect_language).apply(pd.Series)
+    data["description_clean"][data["description_clean"].notna()]
+    .apply(detect_language)
+    .apply(pd.Series)
 )
-
 data.set_index("id")  # TODO
 
 pq.write_to_dataset(

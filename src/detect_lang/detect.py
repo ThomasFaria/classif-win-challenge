@@ -35,4 +35,5 @@ def detect_language(text: str) -> tuple:
         result = detect(text)
         return result["lang"], result["score"]
     except Exception as e:
+        print(text)
         raise ValueError(f"Language detection failed: {e}")
