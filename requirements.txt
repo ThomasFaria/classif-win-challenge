@@ -13,3 +13,4 @@ langchain-huggingface==0.1.0
 sentence-transformers==3.1.0
 chromadb==0.5.7
 bitsandbytes==0.43.3
+accelerate==0.34.2
