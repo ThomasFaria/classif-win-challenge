@@ -1,4 +1,5 @@
-fasttext-langdetect==1.0.5 "numpy<2"
+fasttext-langdetect==1.0.5 
+numpy<2
 ruff==0.6.4
 pre-commit==3.8.0
 pandas==2.2.2
