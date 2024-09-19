@@ -1,13 +1,28 @@
 from src.utils.data import get_file_system
 import pandas as pd
-from transformers import pipeline
 import pyarrow.parquet as pq
 import pyarrow as pa
-import torch
 
-MODEL_NAME = "papluca/xlm-roberta-base-language-detection"
-URL_OUT = "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
-device = "cuda" if torch.cuda.is_available() else "cpu"
+from ftlangdetect import detect
+import re
+import html
+            
+# Detect text language
+def detect_language(text):
+    '''
+    Detect text language 
+    return lang and score
+    '''
+    result = detect(text)
+    return result['lang'], result['score']
+
+
+eol_regex = re.compile(r'\r|\n')
+multispace_regex = re.compile(r'\s\s+')
+html_regex = re.compile(r'<[^<]+?>')
+white_regex = re.compile(r'\xa0')
+punctuation_regex = re.compile(r'[^\w\s]')
+underscore_regex = re.compile(r'_')
 
 fs = get_file_system()
 
@@ -17,19 +32,19 @@ with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset
 # 2 lines with no description
 data.fillna("", inplace=True)
 
-pipe = pipeline("text-classification", model=MODEL_NAME, device=device)
+data['description'] = data['description'][data['description'].notna()].apply(html.unescape)
+data['description'] = data['description'].str.lower().str.replace(eol_regex,' ',regex=True).str.replace(html_regex,' ',regex=True)\
+                            .str.replace(white_regex,' ',regex=True).str.replace(multispace_regex,' ',regex=True)\
+                            .str.strip()
 
-text = (data.loc[:, "title"] + " " + data.loc[:, "description"]).to_list()
+data[['lang', 'score']] = data['description'][data['description'].notna()].apply(detect_language).apply(pd.Series)
 
-results = pipe(text, top_k=1, truncation=True)
-df = data.merge(pd.DataFrame([d[0] for d in results]), left_index=True, right_index=True)
-
-df.set_index("id")  # TODO
+data.set_index("id")  # TODO
 
 pq.write_to_dataset(
-    pa.Table.from_pandas(df),
+    pa.Table.from_pandas(data),
     root_path=URL_OUT,
-    partition_cols=["label"],
+    partition_cols=["lang"],
     basename_template="part-{i}.parquet",
     existing_data_behavior="overwrite_or_ignore",
     filesystem=fs,
