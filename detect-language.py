@@ -17,19 +17,24 @@ html_regex = re.compile(r"<[^<]+?>")
 white_regex = re.compile(r"\xa0")
 punctuation_regex = re.compile(r"[^\w\s]")
 underscore_regex = re.compile(r"_")
+star_regex = re.compile(r"(\*[\s]*)+")
 
 fs = get_file_system()
 
 with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv") as f:
     data = pd.read_csv(f, dtype=str)
 
+# Fill description when data is an image
 data.loc[data["id"] == "881693105", "description"] = id_881693105_desc
+# Remplacer les valeurs nulles ou vides dans 'description' par les valeurs de 'titre'
+data['description'] = data['description'].fillna(data['title'])
+# Create description_clean from description
 data["description_clean"] = data["description"][data["description"].notna()].apply(html.unescape)
 data["description_clean"] = (
     data["description_clean"]
-    .str.lower()
     .str.replace(eol_regex, " ", regex=True)
     .str.replace(html_regex, " ", regex=True)
+    .str.replace(star_regex, " ", regex=True)
     .str.replace(white_regex, " ", regex=True)
     .str.replace(multispace_regex, " ", regex=True)
     .str.strip()
