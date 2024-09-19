@@ -73,7 +73,7 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
     pq.write_to_dataset(
         pa.Table.from_pandas(data),
         root_path=URL_OUT,
-        partition_cols=["label"],
+        partition_cols=["lang"],
         basename_template="part-{i}.parquet",
         existing_data_behavior="overwrite_or_ignore",
         filesystem=fs,
