@@ -30,12 +30,12 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
     data = (
         ds.dataset(
             URL_IN,
-            partitioning=["label"],
+            partitioning=["lang"],
             format="parquet",
             filesystem=fs,
         )
         .to_table()
-        .filter((ds.field("label") == f"label={lang_iso_2}"))
+        .filter((ds.field("lang") == f"lang={lang_iso_2}"))
         .to_pandas()
     )
 
@@ -43,7 +43,7 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
         continue
 
     # Reformat partionnning column
-    data.loc[:, "label"] = data.loc[:, "label"].str.replace("label=", "")
+    data.loc[:, "lang"] = data.loc[:, "lang"].str.replace("lang=", "")
 
     if lang_iso_2 == "en":
         # We do not perform translation when text is in english

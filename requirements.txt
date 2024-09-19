@@ -1,5 +1,5 @@
 numpy<2
-fasttext-langdetect==1.0.5 
+fasttext-langdetect==1.0.5
 ruff==0.6.4
 pre-commit==3.8.0
 pandas==2.2.2
@@ -12,3 +12,4 @@ langchain-community==0.3.0
 langchain-huggingface==0.1.0
 sentence-transformers==3.1.0
 chromadb==0.5.7
+bitsandbytes==0.43.3
