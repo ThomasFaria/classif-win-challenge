@@ -10,6 +10,7 @@ from src.utils.mapping import id_881693105_desc
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+DESC_CUTOFF_SIZE = 500
 
 fs = get_file_system()
 eol_regex = re.compile(r"\r|\n")
@@ -33,16 +34,21 @@ data[["lang", "score"]] = (
 
 # Truncate the description
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
+    chunk_size=DESC_CUTOFF_SIZE,
     chunk_overlap=0,
     length_function=len,
     is_separator_regex=False,
     separators=["\n\n", "\n", ".", "?", "!", ";", ":", ",", " ", ""],
 )
 
-data["description_truncated"] = data["description_clean"].apply(
-    lambda text: text_splitter.split_text(text)[0]
-)
+for idx, row in data.iterrows():
+    splitted_text = text_splitter.split_text(row.description_clean)
+    text_truncated = ""
+    i = 0
+    while (len(text_truncated) < DESC_CUTOFF_SIZE) and (i < len(splitted_text)):
+        text_truncated += f" {splitted_text[i]}"
+        i += 1
+    data.loc[idx, "description_truncated"] = text_truncated
 
 pq.write_to_dataset(
     pa.Table.from_pandas(data),
