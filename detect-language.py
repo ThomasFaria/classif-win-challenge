@@ -22,6 +22,16 @@ star_regex = re.compile(r"(\*[\s]*)+")
 # Liste des abréviations à détecter
 abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(?m/ž\)?|\(?f/n\)?|\(?b/f\)?|\(?άν/γυν\)?|\(?м/ж\)?"
 
+
+# Fonction pour extraire les 5 mots précédant l'abréviation
+def extract_job_title(line):
+    # Regex pour capturer les 5 mots précédant l'abréviation
+    match = re.search(r'(\b\w+\b[\s,]*){1,5}(?=\s*(' + abbreviations + '))', line, re.IGNORECASE)
+    if match:
+        return match.group().strip()
+    return None
+
+
 fs = get_file_system()
 
 with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv") as f:
@@ -60,6 +70,10 @@ data[["lang", "score"]] = (
     .apply(detect_language)
     .apply(pd.Series)
 )
+
+# Appliquer la fonction extract_job_title aux colonne 'description' et 'title' pour extraire les libellés de poste
+data['description_job_title'] = data['description'].apply(extract_job_title)
+data['title_job_title'] = data['title'].apply(extract_job_title)
 data.set_index("id")  # TODO
 
 pq.write_to_dataset(
