@@ -1,0 +1,73 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: run-predictions
+spec:
+  serviceAccountName: workflow
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 64Gi
+  entrypoint: main
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: predictions
+            template: run-predictions
+
+    # Worker templat
+    - name: run-predictions
+      nodeSelector:
+        nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
+      container:
+        image: inseefrlab/onyxia-vscode-pytorch:py3.12.4-gpu
+        imagePullPolicy: Always
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        command: ["/bin/bash", -c]
+        args:
+          - |
+            git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
+            cd classif-win-challenge/ &&
+            pip install -r requirements.txt &&
+            python build-vbd.py &&
+            python classif-llm.py &&
+
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        env:
+          # env var for s3 connexion
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: my-s3-creds
+                key: accessKey
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-s3-creds
+                key: secretKey
+          - name: AWS_DEFAULT_REGION
+            value: us-east-1
+          - name: AWS_S3_ENDPOINT
+            value: minio.lab.sspcloud.fr
+          - name: HF_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: hf-token
+                key: token
+          - name: GIT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: github-info
+                key: username
+          - name: GIT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-info
+                key: token
