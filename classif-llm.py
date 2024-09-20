@@ -36,6 +36,9 @@ from src.utils.data import get_file_system
 from src.utils.mapping import lang_mapping
 from src.vector_db.loaders import load_retriever
 
+TITLE_COLUMN = "title"
+DESCRIPTION_COLUMN = "translation"
+
 fs = get_file_system()
 
 generation_args = {
@@ -68,8 +71,8 @@ with fs.open(URL_LABELS) as f:
 
 def process_row(row):
     """Process a single row and return the prediction."""
-    description = row.translation
-    title = row.title
+    description = row["TITLE_COLUMN"]
+    title = row["DESCRIPTION_COLUMN"]
     id = row.id
 
     try:
