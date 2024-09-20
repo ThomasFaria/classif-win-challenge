@@ -1,4 +1,6 @@
 import os
+import html
+import re
 
 import s3fs
 
@@ -48,3 +50,26 @@ def truncate_txt(input_str: str, phrases: list):
 
     # Return the truncated string up to the first found phrase
     return input_str[:first_phrase_pos]
+
+
+multispace_regex = re.compile(r"\s\s+")
+html_regex = re.compile(r"<[^<]+?>")
+white_regex = re.compile(r"\xa0")
+punctuation_regex = re.compile(r"[^\w\s]")
+underscore_regex = re.compile(r"_")
+star_regex = re.compile(r"(\*[\s]*)+")
+
+# Liste des abréviations à détecter
+abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(?m/ž\)?|\(?f/n\)?|\(?b/f\)?|\(?άν/γυν\)?|\(?м/ж\)?"
+
+
+# Function to clean text using all relevant regex
+def clean_text(text):
+    if not isinstance(text, str):
+        return text
+    text = html.unescape(text)
+    text = html_regex.sub(" ", text)
+    text = star_regex.sub(" <ANONYMOUS> ", text)
+    text = white_regex.sub(" ", text)
+    text = multispace_regex.sub(" ", text)
+    return text.strip()

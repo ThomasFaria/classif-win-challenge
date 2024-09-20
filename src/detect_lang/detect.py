@@ -1,4 +1,5 @@
 from ftlangdetect import detect
+from src.utils.data import clean_text
 
 
 def detect_language(text: str) -> tuple:
@@ -37,3 +38,13 @@ def detect_language(text: str) -> tuple:
     except Exception as e:
         print(text)
         raise ValueError(f"Language detection failed: {e}")
+
+
+def process_data_lang_detec(data):
+    # Fill description where missing with title
+    data["description"] = data["description"].fillna(data["title"])
+
+    # Apply the text cleaning function to both 'description' and 'title'
+    data["description_clean"] = data["description"].apply(clean_text)
+    data["title_clean"] = data["title"].apply(clean_text)
+    return data
