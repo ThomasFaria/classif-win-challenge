@@ -35,7 +35,7 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             python build-vbd.py &&
-            python classif-llm.py &&
+            python classif-llm.py
 
         volumeMounts:
           - mountPath: /dev/shm

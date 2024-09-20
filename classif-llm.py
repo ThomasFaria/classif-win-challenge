@@ -22,7 +22,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 CHROMA_DB_LOCAL_DIRECTORY = "data/chroma_db"
 COLLECTION_NAME = "test"
 LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
-MAX_CODE_RETRIEVED = 30
+MAX_CODE_RETRIEVED = 5
 SEARCH_ALGO = "similarity"
 fs = get_file_system()
 URL_OUT = "s3://projet-dedup-oja/challenge_classification/processed-data/predictions_by_lang"
@@ -69,10 +69,9 @@ for lang in lang_mapping.lang_iso_2:
     # Reformat partionnning column
     data.loc[:, "lang"] = data.loc[:, "lang"].str.replace("lang=", "")
 
-    data_sub = data.head(10)
     results = []
 
-    for row in tqdm(data_sub.itertuples(), total=data_sub.shape[0]):
+    for row in tqdm(data.itertuples(), total=data.shape[0]):
         description = row.translation
         title = row.title
         id = row.id
@@ -130,7 +129,7 @@ for lang in lang_mapping.lang_iso_2:
 
         results.append(response.dict() | {"id": id, "label_code": label_code})
 
-    predictions = data_sub.merge(pd.DataFrame(results), on="id")
+    predictions = data.merge(pd.DataFrame(results), on="id")
 
     pq.write_to_dataset(
         pa.Table.from_pandas(predictions),
