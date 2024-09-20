@@ -22,6 +22,8 @@ fs = get_file_system()
 model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATOR_MODEL).to(DEVICE)
 tokenizer = AutoTokenizer.from_pretrained(TRANSLATOR_MODEL)
 
+# Trunquer les descriptions avec recursiveTextsplitter -> + rajouter la phrase comprenant les mots du titre
+
 
 for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso_3):
     data = (

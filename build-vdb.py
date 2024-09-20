@@ -18,7 +18,11 @@ with fs.open(URL_LABELS) as f:
 if TRUNCATE_LABELS_DESCRIPTION:
     data.loc[:, "description"] = data["description"].apply(
         lambda x: truncate_txt(
-            x, [".\nTasks include", "Examples of the occupations classified here:"]
+            x,
+            [
+                ".\nTasks include",
+                "Examples of the occupations classified here:",
+            ],  # Find other sentence to truncate
         )
     )
 

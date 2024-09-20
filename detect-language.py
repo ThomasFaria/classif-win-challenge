@@ -8,6 +8,8 @@ from src.detect_lang.detect import detect_language, process_data_lang_detec
 from src.utils.data import get_file_system
 from src.utils.mapping import id_881693105_desc
 
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 
 fs = get_file_system()
 eol_regex = re.compile(r"\r|\n")
@@ -27,6 +29,19 @@ data[["lang", "score"]] = (
     .str.replace(eol_regex, " ", regex=True)
     .apply(detect_language)
     .apply(pd.Series)
+)
+
+# Truncate the description
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=0,
+    length_function=len,
+    is_separator_regex=False,
+    separators=["\n\n", "\n", ".", "?", "!", ";", ":", ",", " ", ""],
+)
+
+data["description_truncated"] = data["description_clean"].apply(
+    lambda text: text_splitter.split_text(text)[0]
 )
 
 pq.write_to_dataset(
