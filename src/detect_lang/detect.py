@@ -1,4 +1,5 @@
 from ftlangdetect import detect
+
 from src.utils.data import clean_text
 
 

@@ -1,14 +1,14 @@
 import re
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.constants.paths import URL_DATASET, URL_DATASET_WITH_LANG
 from src.detect_lang.detect import detect_language, process_data_lang_detec
 from src.utils.data import get_file_system
 from src.utils.mapping import id_881693105_desc
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 DESC_CUTOFF_SIZE = 500
 

@@ -6,6 +6,9 @@ URL_DATASET_WITH_LANG = (
 URL_DATASET_TRANSLATED = (
     "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang_translated"
 )
+URL_DATASET_PROMPTS = (
+    "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang_prompts"
+)
 URL_DATASET_PREDICTED = (
     "s3://projet-dedup-oja/challenge_classification/processed-data/predictions_by_lang"
 )

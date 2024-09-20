@@ -1,3 +1,5 @@
+from langchain_core.prompts import PromptTemplate
+
 RAG_PROMPT_TEMPLATE = """You are tasked with helping classify job advertisements into predefined occupational categories.
 
 Given a job advertisement description and a list of the most relevant occupational categories, your goal is to select the single most appropriate occupational category for the job based on the description and its title.
@@ -85,3 +87,33 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
         print("Warning: The prompt is too long. Only 2 documents have been included.")
     num_documents_included = len(current_docs)
     return prompt, num_documents_included
+
+
+def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
+    description = getattr(row, kwargs.get("description_column"))
+    title = getattr(row, kwargs.get("title_column"))
+    id = row.id
+
+    # Retrieve documents and make sure a document is not retrieved twice
+    retrieved_docs = retriever.invoke(" ".join([title, description]))
+    retrieved_docs_unique = []
+    for item in retrieved_docs:
+        if item not in retrieved_docs_unique:
+            retrieved_docs_unique.append(item)
+
+    # Generate the prompt and include the number of documents
+    prompt_template = PromptTemplate.from_template(
+        template=RAG_PROMPT_TEMPLATE,
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
+
+    prompt, _ = generate_valid_prompt(
+        prompt_template,
+        kwargs.get("prompt_max_token"),
+        tokenizer,
+        title=title,
+        description=description,
+        retrieved_docs=retrieved_docs_unique,
+    )
+
+    return {"id": id, "prompt": prompt}

@@ -4,18 +4,17 @@ import pyarrow.parquet as pq
 from tqdm import tqdm
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
+from src.constants.paths import (
+    URL_DATASET_TRANSLATED,
+    URL_DATASET_WITH_LANG,
+)
 from src.constants.translation import (
     BATCH_SIZE,
     MAX_LENGTH_TO_TRANSLATE,
     MAX_LENGTH_TRANSLATED,
     TRANSLATOR_MODEL,
 )
-from src.constants.paths import (
-    URL_DATASET_WITH_LANG,
-    URL_DATASET_TRANSLATED,
-)
 from src.constants.utils import DEVICE
-
 from src.translation.translate import translate_batch
 from src.utils.data import get_file_system, split_into_batches
 from src.utils.mapping import lang_mapping
@@ -52,8 +51,8 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
 
     if lang_iso_2 == "en":
         # We do not perform translation when text is in english
-        data.loc[:, "title_en"] = data[TITLE_COLUMN]
-        data.loc[:, "description_en"] = data[DESCRIPTION_COLUMN]
+        data.loc[:, f"{TITLE_COLUMN}_en"] = data[TITLE_COLUMN]
+        data.loc[:, f"{DESCRIPTION_COLUMN}_en"] = data[DESCRIPTION_COLUMN]
     else:
         print(f"Translating texts from {lang_iso_3} to English")
         for col in [TITLE_COLUMN, DESCRIPTION_COLUMN]:
