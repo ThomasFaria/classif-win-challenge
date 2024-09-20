@@ -1,0 +1,5 @@
+LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
+MAX_NEW_TOKEN = 2000
+RETURN_FULL_TEXT = False
+DO_SAMPLE = True
+TEMPERATURE = 0.2

@@ -1,6 +1,5 @@
 from src.utils.data import get_file_system
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
 import pyarrow.parquet as pq
 import pyarrow as pa
 from src.utils.mapping import lang_mapping
@@ -8,28 +7,26 @@ from src.utils.data import split_into_batches
 import pyarrow.dataset as ds
 from tqdm import tqdm
 from src.translation.translate import translate_batch
-
-MODEL_NAME = "facebook/nllb-200-distilled-1.3B"
-URL_IN = "projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
-URL_OUT = (
-    "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang_translated"
+from src.config.constants import (
+    URL_DATASET_WITH_LANG,
+    URL_DATASET_TRANSLATED,
+    DEVICE,
+    TRANSLATOR_MODEL,
+    BATCH_SIZE,
+    MAX_LENGTH_TO_TRANSLATE,
+    MAX_LENGTH_TRANSLATED,
 )
-MAX_LENGTH_ENCODED = 512
-MAX_LENGTH_DECODED = 512
-BATCH_SIZE = 100
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 fs = get_file_system()
 
-model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME).to(device)
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATOR_MODEL).to(DEVICE)
+tokenizer = AutoTokenizer.from_pretrained(TRANSLATOR_MODEL)
 
 
 for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso_3):
     data = (
         ds.dataset(
-            URL_IN,
+            URL_DATASET_WITH_LANG.replace("s3://", ""),
             partitioning=["lang"],
             format="parquet",
             filesystem=fs,
@@ -60,19 +57,17 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
                 lang_iso_3,
                 tokenizer,
                 model,
-                device,
-                max_length_encoded=MAX_LENGTH_ENCODED,
-                max_length_decoded=MAX_LENGTH_DECODED,
+                DEVICE,
+                max_length_encoded=MAX_LENGTH_TO_TRANSLATE,
+                max_length_decoded=MAX_LENGTH_TRANSLATED,
             )
             translations.append(translated_texts)
 
         data.loc[:, "translation"] = sum(translations, [])  # flatten list of lists
 
-    data.set_index("id")  # TODO
-
     pq.write_to_dataset(
         pa.Table.from_pandas(data),
-        root_path=URL_OUT,
+        root_path=URL_DATASET_TRANSLATED,
         partition_cols=["lang"],
         basename_template="part-{i}.parquet",
         existing_data_behavior="overwrite_or_ignore",

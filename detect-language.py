@@ -1,6 +1,7 @@
 from src.utils.data import get_file_system
 from src.detect_lang.detect import detect_language
 from src.utils.mapping import id_881693105_desc
+from src.constants.paths import URL_DATASET, URL_DATASET_WITH_LANG
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -9,7 +10,6 @@ import pyarrow as pa
 import re
 import html
 
-URL_OUT = "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
 
 eol_regex = re.compile(r"\r|\n")
 multispace_regex = re.compile(r"\s\s+")
@@ -26,7 +26,7 @@ abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(
 # Fonction pour extraire les 5 mots précédant l'abréviation
 def extract_job_title(line):
     # Regex pour capturer les 5 mots précédant l'abréviation
-    match = re.search(r'(\b\w+\b[\s,]*){1,5}(?=\s*(' + abbreviations + '))', line, re.IGNORECASE)
+    match = re.search(r"(\b\w+\b[\s,]*){1,5}(?=\s*(" + abbreviations + "))", line, re.IGNORECASE)
     if match:
         return match.group().strip()
     return None
@@ -34,7 +34,7 @@ def extract_job_title(line):
 
 fs = get_file_system()
 
-with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv") as f:
+with fs.open(URL_DATASET) as f:
     data = pd.read_csv(f, dtype=str)
 
 # Fill description when data is an image
@@ -72,13 +72,12 @@ data[["lang", "score"]] = (
 )
 
 # Appliquer la fonction extract_job_title aux colonne 'description' et 'title' pour extraire les libellés de poste
-data['description_job_title'] = data['description'].apply(extract_job_title)
-data['title_job_title'] = data['title'].apply(extract_job_title)
-data.set_index("id")  # TODO
+data["description_job_title"] = data["description"].apply(extract_job_title)
+data["title_job_title"] = data["title"].apply(extract_job_title)
 
 pq.write_to_dataset(
     pa.Table.from_pandas(data),
-    root_path=URL_OUT,
+    root_path=URL_DATASET_WITH_LANG,
     partition_cols=["lang"],
     basename_template="part-{i}.parquet",
     existing_data_behavior="overwrite_or_ignore",

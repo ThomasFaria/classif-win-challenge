@@ -1,7 +1,6 @@
 from src.utils.data import get_file_system
 from src.llm.build_llm import build_llm_model
 from src.vector_db.loaders import load_retriever
-import torch
 from src.utils.mapping import lang_mapping
 
 import os
@@ -11,21 +10,36 @@ from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputPar
 import pyarrow.dataset as ds
 
 from tqdm import tqdm
-from src.response.response_llm import LLMResponse, ISCO_CODES
+from src.response.response_llm import LLMResponse
 import pandas as pd
 import pyarrow.parquet as pq
 import pyarrow as pa
 
-EMBEDDING_MODEL = "OrdalieTech/Solon-embeddings-large-0.1"
-URL_IN = "projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang_translated/"
-device = "cuda" if torch.cuda.is_available() else "cpu"
-CHROMA_DB_LOCAL_DIRECTORY = "data/chroma_db"
-COLLECTION_NAME = "test"
-LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
-MAX_CODE_RETRIEVED = 5
-SEARCH_ALGO = "similarity"
+
+from src.constants.utils import DEVICE, ISCO_CODES
+from src.constants.llm import MAX_NEW_TOKEN, RETURN_FULL_TEXT, DO_SAMPLE, TEMPERATURE, LLM_MODEL
+from src.constants.vector_db import (
+    EMBEDDING_MODEL,
+    COLLECTION_NAME,
+    SEARCH_ALGO,
+    MAX_CODE_RETRIEVED,
+)
+from src.constants.paths import (
+    CHROMA_DB_LOCAL_DIRECTORY,
+    URL_LABELS,
+    URL_DATASET_TRANSLATED,
+    URL_DATASET_PREDICTED,
+)
+
+
 fs = get_file_system()
-URL_OUT = "s3://projet-dedup-oja/challenge_classification/processed-data/predictions_by_lang"
+
+generation_args = {
+    "max_new_tokens": MAX_NEW_TOKEN,
+    "return_full_text": RETURN_FULL_TEXT,
+    "do_sample": DO_SAMPLE,
+    "temperature": TEMPERATURE,
+}
 
 llm, tokenizer = build_llm_model(
     model_name=LLM_MODEL,
@@ -40,12 +54,12 @@ retriever = load_retriever(
     collection_name=COLLECTION_NAME,
     db_directory=CHROMA_DB_LOCAL_DIRECTORY,
     search_algo=SEARCH_ALGO,
-    device=device,
+    device=DEVICE,
     max_code_retrieved=MAX_CODE_RETRIEVED,
 )
 
 
-with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_labels.csv") as f:
+with fs.open(URL_LABELS) as f:
     labels = pd.read_csv(f, dtype=str)
 
 
@@ -53,7 +67,7 @@ for lang in lang_mapping.lang_iso_2:
     print(f"Prediction for language: {lang}")
     data = (
         ds.dataset(
-            URL_IN,
+            URL_DATASET_TRANSLATED.replace("s3://", ""),
             partitioning=["lang"],
             format="parquet",
             filesystem=fs,
@@ -133,7 +147,7 @@ for lang in lang_mapping.lang_iso_2:
 
     pq.write_to_dataset(
         pa.Table.from_pandas(predictions),
-        root_path=URL_OUT,
+        root_path=URL_DATASET_PREDICTED,
         partition_cols=["lang"],
         basename_template="part-{i}.parquet",
         existing_data_behavior="overwrite_or_ignore",
