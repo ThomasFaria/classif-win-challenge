@@ -1,5 +1,5 @@
 from src.utils.data import get_file_system, truncate_txt
-from src.db_building.document_chunker import chunk_documents
+from src.vector_db.document_chunker import chunk_documents
 import pandas as pd
 import torch
 from langchain_huggingface import HuggingFaceEmbeddings

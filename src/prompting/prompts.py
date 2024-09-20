@@ -11,10 +11,8 @@ Job Ad Description:
 Relevant Occupational Categories:
 {proposed_categories}
 
-Please choose the best occupational category based on the description and give a likelihood estimate between 0 and 100 for your confidence.
-Reply in a json format as shown in the example below, this is very important ! DO NOT ADD ANYTHING ELSE TO YOUR RESPONSE.
-
-Example format: {{"Code" : <your_code>, Confidence : <your_confidence>}}
+Please choose the best occupational category based on the description and give a likelihood estimate between 0 and 1 for your confidence.
+{format_instructions}
 """
 
 
@@ -25,3 +23,8 @@ def format_docs(docs: list):
             for i, doc in enumerate(docs)
         ]
     )
+
+
+# Reply in a json format as shown in the example below, this is very important ! DO NOT ADD ANYTHING ELSE TO YOUR RESPONSE.
+
+# Example format: {{"Code" : <your_code>, "Confidence" : <your_confidence>}}
