@@ -4,15 +4,18 @@ import pyarrow.parquet as pq
 from tqdm import tqdm
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-from src.config.constants import (
+from src.constants.translation import (
     BATCH_SIZE,
-    DEVICE,
     MAX_LENGTH_TO_TRANSLATE,
     MAX_LENGTH_TRANSLATED,
     TRANSLATOR_MODEL,
-    URL_DATASET_TRANSLATED,
-    URL_DATASET_WITH_LANG,
 )
+from src.constants.paths import (
+    URL_DATASET_WITH_LANG,
+    URL_DATASET_TRANSLATED,
+)
+from src.constants.utils import DEVICE
+
 from src.translation.translate import translate_batch
 from src.utils.data import get_file_system, split_into_batches
 from src.utils.mapping import lang_mapping
