@@ -1,6 +1,7 @@
 from typing import Optional
-from langchain_huggingface import HuggingFaceEmbeddings
+
 from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 
 
 def load_retriever(

@@ -1,5 +1,6 @@
-import s3fs
 import os
+
+import s3fs
 
 
 def get_file_system() -> s3fs.S3FileSystem:

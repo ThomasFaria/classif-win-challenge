@@ -1,36 +1,33 @@
-from src.utils.data import get_file_system
-from src.llm.build_llm import build_llm_model
-from src.vector_db.loaders import load_retriever
-from src.utils.mapping import lang_mapping
-
 import os
-from src.prompting.prompts import RAG_PROMPT_TEMPLATE, format_docs
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputParser
-import pyarrow.dataset as ds
 
-from tqdm import tqdm
-from src.response.response_llm import LLMResponse
 import pandas as pd
-import pyarrow.parquet as pq
 import pyarrow as pa
+import pyarrow.dataset as ds
+import pyarrow.parquet as pq
+from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from tqdm import tqdm
 
-
-from src.constants.utils import DEVICE, ISCO_CODES
-from src.constants.llm import MAX_NEW_TOKEN, RETURN_FULL_TEXT, DO_SAMPLE, TEMPERATURE, LLM_MODEL
-from src.constants.vector_db import (
-    EMBEDDING_MODEL,
-    COLLECTION_NAME,
-    SEARCH_ALGO,
-    MAX_CODE_RETRIEVED,
-)
+from src.constants.llm import DO_SAMPLE, LLM_MODEL, MAX_NEW_TOKEN, RETURN_FULL_TEXT, TEMPERATURE
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
-    URL_LABELS,
-    URL_DATASET_TRANSLATED,
     URL_DATASET_PREDICTED,
+    URL_DATASET_TRANSLATED,
+    URL_LABELS,
 )
-
+from src.constants.utils import DEVICE, ISCO_CODES
+from src.constants.vector_db import (
+    COLLECTION_NAME,
+    EMBEDDING_MODEL,
+    MAX_CODE_RETRIEVED,
+    SEARCH_ALGO,
+)
+from src.llm.build_llm import build_llm_model
+from src.prompting.prompts import RAG_PROMPT_TEMPLATE, format_docs
+from src.response.response_llm import LLMResponse
+from src.utils.data import get_file_system
+from src.utils.mapping import lang_mapping
+from src.vector_db.loaders import load_retriever
 
 fs = get_file_system()
 

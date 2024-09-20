@@ -1,21 +1,21 @@
-from src.utils.data import get_file_system
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import pyarrow.parquet as pq
 import pyarrow as pa
-from src.utils.mapping import lang_mapping
-from src.utils.data import split_into_batches
 import pyarrow.dataset as ds
+import pyarrow.parquet as pq
 from tqdm import tqdm
-from src.translation.translate import translate_batch
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
 from src.config.constants import (
-    URL_DATASET_WITH_LANG,
-    URL_DATASET_TRANSLATED,
-    DEVICE,
-    TRANSLATOR_MODEL,
     BATCH_SIZE,
+    DEVICE,
     MAX_LENGTH_TO_TRANSLATE,
     MAX_LENGTH_TRANSLATED,
+    TRANSLATOR_MODEL,
+    URL_DATASET_TRANSLATED,
+    URL_DATASET_WITH_LANG,
 )
+from src.translation.translate import translate_batch
+from src.utils.data import get_file_system, split_into_batches
+from src.utils.mapping import lang_mapping
 
 fs = get_file_system()
 

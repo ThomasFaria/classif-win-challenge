@@ -1,13 +1,13 @@
+import pandas as pd
+from chromadb.config import Settings
+from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+
+from src.constants.paths import CHROMA_DB_LOCAL_DIRECTORY, URL_LABELS
+from src.constants.utils import DEVICE
+from src.constants.vector_db import COLLECTION_NAME, EMBEDDING_MODEL, TRUNCATE_LABELS_DESCRIPTION
 from src.utils.data import get_file_system, truncate_txt
 from src.vector_db.document_chunker import chunk_documents
-import pandas as pd
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
-from chromadb.config import Settings
-from src.constants.paths import URL_LABELS, CHROMA_DB_LOCAL_DIRECTORY
-from src.constants.utils import DEVICE
-from src.constants.vector_db import EMBEDDING_MODEL, TRUNCATE_LABELS_DESCRIPTION, COLLECTION_NAME
-
 
 fs = get_file_system()
 

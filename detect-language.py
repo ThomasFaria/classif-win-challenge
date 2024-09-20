@@ -1,15 +1,14 @@
-from src.utils.data import get_file_system
-from src.detect_lang.detect import detect_language
-from src.utils.mapping import id_881693105_desc
-from src.constants.paths import URL_DATASET, URL_DATASET_WITH_LANG
+import html
+import re
 
 import pandas as pd
-import pyarrow.parquet as pq
 import pyarrow as pa
+import pyarrow.parquet as pq
 
-import re
-import html
-
+from src.constants.paths import URL_DATASET, URL_DATASET_WITH_LANG
+from src.detect_lang.detect import detect_language
+from src.utils.data import get_file_system
+from src.utils.mapping import id_881693105_desc
 
 eol_regex = re.compile(r"\r|\n")
 multispace_regex = re.compile(r"\s\s+")
