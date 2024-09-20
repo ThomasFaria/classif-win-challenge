@@ -34,7 +34,7 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
-            python build-vbd.py &&
+            python build-vdb.py &&
             python classif-llm.py
 
         volumeMounts:
