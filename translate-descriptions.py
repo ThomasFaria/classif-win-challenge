@@ -44,26 +44,28 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
 
     if lang_iso_2 == "en":
         # We do not perform translation when text is in english
-        data.loc[:, "translation"] = data["title"] + " " + data["description"]
+        data.loc[:, "title_en"] = data["title"]
+        data.loc[:, "description_en"] = data["description"]
     else:
         print(f"Translating texts from {lang_iso_3} to English")
-        txt_to_translate = (data["title"] + " " + data["description"]).to_list()
-        batches = split_into_batches(txt_to_translate, BATCH_SIZE)
+        for col in ["title", "description"]:
+            txt_to_translate = data[col].to_list()
+            batches = split_into_batches(txt_to_translate, BATCH_SIZE)
 
-        translations = []
-        for batch in tqdm(batches, total=len(batches)):
-            translated_texts = translate_batch(
-                batch,
-                lang_iso_3,
-                tokenizer,
-                model,
-                DEVICE,
-                max_length_encoded=MAX_LENGTH_TO_TRANSLATE,
-                max_length_decoded=MAX_LENGTH_TRANSLATED,
-            )
-            translations.append(translated_texts)
+            translations = []
+            for batch in tqdm(batches, total=len(batches)):
+                translated_texts = translate_batch(
+                    batch,
+                    lang_iso_3,
+                    tokenizer,
+                    model,
+                    DEVICE,
+                    max_length_encoded=MAX_LENGTH_TO_TRANSLATE,
+                    max_length_decoded=MAX_LENGTH_TRANSLATED,
+                )
+                translations.append(translated_texts)
 
-        data.loc[:, "translation"] = sum(translations, [])  # flatten list of lists
+            data.loc[:, f"{col}_en"] = sum(translations, [])  # flatten list of lists
 
     pq.write_to_dataset(
         pa.Table.from_pandas(data),
