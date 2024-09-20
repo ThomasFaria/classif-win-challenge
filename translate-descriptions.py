@@ -17,6 +17,9 @@ from src.translation.translate import translate_batch
 from src.utils.data import get_file_system, split_into_batches
 from src.utils.mapping import lang_mapping
 
+TITLE_COLUMN = "title_clean"
+DESCRIPTION_COLUMN = "description_truncated"
+
 fs = get_file_system()
 
 model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATOR_MODEL).to(DEVICE)
@@ -46,11 +49,11 @@ for lang_iso_2, lang_iso_3 in zip(lang_mapping.lang_iso_2, lang_mapping.lang_iso
 
     if lang_iso_2 == "en":
         # We do not perform translation when text is in english
-        data.loc[:, "title_en"] = data["title"]
-        data.loc[:, "description_en"] = data["description"]
+        data.loc[:, "title_en"] = data[TITLE_COLUMN]
+        data.loc[:, "description_en"] = data[DESCRIPTION_COLUMN]
     else:
         print(f"Translating texts from {lang_iso_3} to English")
-        for col in ["title", "description"]:
+        for col in [TITLE_COLUMN, DESCRIPTION_COLUMN]:
             txt_to_translate = data[col].to_list()
             batches = split_into_batches(txt_to_translate, BATCH_SIZE)
 
