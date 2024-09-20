@@ -25,6 +25,63 @@ def format_docs(docs: list):
     )
 
 
-# Reply in a json format as shown in the example below, this is very important ! DO NOT ADD ANYTHING ELSE TO YOUR RESPONSE.
+def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs):
+    """
+    Generate a prompt that validates against a maximum token length. If the prompt exceeds the token limit,
+    reduce the number of documents retrieved until the prompt fits.
+    If it still exceeds the limit, include only 2 documents and print a warning.
 
-# Example format: {{"Code" : <your_code>, "Confidence" : <your_confidence>}}
+    Args:
+        prompt_template: The prompt template to format the final prompt.
+        max_tokens: The maximum allowed token length for the prompt.
+        tokenizer: The tokenizer used to compute token lengths.
+        kwargs: Additional keyword arguments, such as title, description, and retrieved_docs.
+
+    Returns:
+        prompt (str): The final prompt that fits within the token limit.
+    """
+
+    def get_token_length(text):
+        """Helper function to calculate token length of a given text."""
+        return len(tokenizer.encode(text, truncation=False))
+
+    # Extracting relevant fields from kwargs
+    title = kwargs.get("title", "")
+    description = kwargs.get("description", "")
+    retrieved_docs = kwargs.get("retrieved_docs", [])
+
+    # Initialize prompt with all documents
+    current_docs = retrieved_docs
+    prompt = prompt_template.format(
+        **{
+            "title": title,
+            "description": description,
+            "proposed_categories": format_docs(current_docs),
+        }
+    )
+
+    # Check token length and adjust by reducing documents if necessary
+    while get_token_length(prompt) > max_tokens and len(current_docs) > 0:
+        # Remove the last document and retry
+        current_docs = current_docs[:-1]
+        prompt = prompt_template.format(
+            **{
+                "title": title,
+                "description": description,
+                "proposed_categories": format_docs(current_docs),
+            }
+        )
+
+    # If the prompt is still too long, include only 2 documents and print a warning
+    if get_token_length(prompt) > max_tokens:
+        current_docs = current_docs[:2]  # Include only 2 documents
+        prompt = prompt_template.format(
+            **{
+                "title": title,
+                "description": description,
+                "proposed_categories": format_docs(current_docs),
+            }
+        )
+        print("Warning: The prompt is too long. Only 2 documents have been included.")
+    num_documents_included = len(current_docs)
+    return prompt, num_documents_included

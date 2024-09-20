@@ -8,7 +8,14 @@ from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputPar
 from langchain_core.prompts import PromptTemplate
 from tqdm import tqdm
 
-from src.constants.llm import DO_SAMPLE, LLM_MODEL, MAX_NEW_TOKEN, RETURN_FULL_TEXT, TEMPERATURE
+from src.constants.llm import (
+    DO_SAMPLE,
+    LLM_MODEL,
+    MAX_NEW_TOKEN,
+    RETURN_FULL_TEXT,
+    TEMPERATURE,
+    PROMPT_MAX_TOKEN,
+)
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
     URL_DATASET_PREDICTED,
@@ -23,7 +30,7 @@ from src.constants.vector_db import (
     SEARCH_ALGO,
 )
 from src.llm.build_llm import build_llm_model
-from src.prompting.prompts import RAG_PROMPT_TEMPLATE, format_docs
+from src.prompting.prompts import RAG_PROMPT_TEMPLATE, format_docs, generate_valid_prompt
 from src.response.response_llm import LLMResponse
 from src.utils.data import get_file_system
 from src.utils.mapping import lang_mapping
@@ -72,7 +79,7 @@ for lang in lang_mapping.lang_iso_2:
         .to_table()
         .filter((ds.field("lang") == f"lang={lang}"))
         .to_pandas()
-    )
+    ).head(10)
 
     if data.empty:
         continue
@@ -87,7 +94,6 @@ for lang in lang_mapping.lang_iso_2:
         title = row.title
         id = row.id
 
-        # Ici faut voir ce qu'on fait mais faut virer/nettoyer/selectionner les documents
         retrieved_docs = retriever.invoke(" ".join([title, description]))
         retrieved_docs_unique = []
         for item in retrieved_docs:
@@ -100,14 +106,16 @@ for lang in lang_mapping.lang_iso_2:
             partial_variables={"format_instructions": parser.get_format_instructions()},
         )
 
-        # TODO: make sure the prompt is not to long
-        # prompt = prompt_template.format(
-        #     **{
-        #         "title": title,
-        #         "description": description,
-        #         "proposed_categories": format_docs(retrieved_docs_unique),
-        #     }
-        # )
+        prompt, num_documents_included = generate_valid_prompt(
+            prompt_template,
+            PROMPT_MAX_TOKEN,
+            tokenizer,
+            **{
+                "title": title,
+                "description": description,
+                "retrieved_docs": retrieved_docs_unique,
+            },
+        )
 
         # On crée la chaine de traitement
         chain = prompt_template | llm | parser
@@ -118,7 +126,9 @@ for lang in lang_mapping.lang_iso_2:
                 {
                     "title": title,
                     "description": description,
-                    "proposed_categories": format_docs(retrieved_docs_unique),
+                    "proposed_categories": format_docs(
+                        retrieved_docs_unique[:num_documents_included]
+                    ),
                 },
             )
         except ValueError as parse_error:
