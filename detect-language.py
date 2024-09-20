@@ -19,6 +19,9 @@ punctuation_regex = re.compile(r"[^\w\s]")
 underscore_regex = re.compile(r"_")
 star_regex = re.compile(r"(\*[\s]*)+")
 
+# Liste des abréviations à détecter
+abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(?m/ž\)?|\(?f/n\)?|\(?b/f\)?|\(?άν/γυν\)?|\(?м/ж\)?"
+
 fs = get_file_system()
 
 with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv") as f:
@@ -26,12 +29,24 @@ with fs.open("s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset
 
 # Fill description when data is an image
 data.loc[data["id"] == "881693105", "description"] = id_881693105_desc
-# Remplacer les valeurs nulles ou vides dans 'description' par les valeurs de 'titre'
+# Remplacer les valeurs nulles ou vides dans 'description' par les valeurs de 'title'
 data["description"] = data["description"].fillna(data["title"])
 # Create description_clean from description
 data["description_clean"] = data["description"][data["description"].notna()].apply(html.unescape)
 data["description_clean"] = (
     data["description_clean"]
+    .str.replace(eol_regex, " ", regex=True)
+    .str.replace(html_regex, " ", regex=True)
+    .str.replace(star_regex, " <ANONYMOUS> ", regex=True)
+    .str.replace(white_regex, " ", regex=True)
+    .str.replace(multispace_regex, " ", regex=True)
+    .str.strip()
+)
+
+# Create title_clean from description
+data["title_clean"] = data["title"][data["title"].notna()].apply(html.unescape)
+data["title_clean"] = (
+    data["title_clean"]
     .str.replace(eol_regex, " ", regex=True)
     .str.replace(html_regex, " ", regex=True)
     .str.replace(star_regex, " <ANONYMOUS> ", regex=True)
