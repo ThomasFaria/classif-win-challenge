@@ -106,7 +106,15 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
 
 def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
+    description = (
+        description
+        if description is not None
+        else getattr(row, kwargs.get("description_column").replace("_en", ""))
+    )
     title = getattr(row, kwargs.get("title_column"))
+    title = (
+        title if title is not None else getattr(row, kwargs.get("title_column").replace("_en", ""))
+    )
     id = row.id
 
     # Retrieve documents

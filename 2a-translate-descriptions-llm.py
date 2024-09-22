@@ -53,7 +53,7 @@ DESCRIPTION_COLUMN = "description_truncated"
 fs = get_file_system()
 
 
-def create_prompt(batch, col):
+def create_prompt(batch, col, lang):
     template = (
         TRANSLATION_PROMPT_TEMPLATE_DESC
         if batch[col] == DESCRIPTION_COLUMN
@@ -100,7 +100,7 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2[::-1], lang_mapping.lang[::-
 
         for col in [TITLE_COLUMN, DESCRIPTION_COLUMN]:
             dataset = dataset.map(
-                lambda batch: {f"prompt_{col}": create_prompt(batch, col)},
+                lambda batch: {f"prompt_{col}": create_prompt(batch, col, lang)},
                 batched=False,  # Disable batching here to process one row at a time for the prompt creation
             )
 
