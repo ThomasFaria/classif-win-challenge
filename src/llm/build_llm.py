@@ -55,7 +55,6 @@ def build_llm_model(
 
     # Load LLM
     model = AutoModelForCausalLM.from_pretrained(model_name, **configs)
-    model.to_device(device)
 
     # Create a pipeline with  tokenizer and model
     pipeline_HF = pipeline(
