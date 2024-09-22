@@ -47,7 +47,7 @@ with fs.open(URL_LABELS) as f:
 parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
 
-for lang in lang_mapping.lang_iso_2[12:]:
+for lang in lang_mapping.lang_iso_2[1:12]:
     print(f"Processing for language: {lang}")
 
     # Load the dataset
