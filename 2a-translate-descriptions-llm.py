@@ -114,7 +114,7 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
                     [gen[0].text for gen in response_batch.generations]
                 )  # Extract generated text from each response
 
-            data.loc[:, f"{col}_en"] = [response[0].text for response in sum(translations, [])]
+            data.loc[:, f"{col}_en"] = translations
 
         results_title = []
         results_desc = []
@@ -139,11 +139,11 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
             :, [f"{TITLE_COLUMN}_en", f"{DESCRIPTION_COLUMN}_en"]
         ]
 
-        pq.write_to_dataset(
-            pa.Table.from_pandas(data),
-            root_path=URL_DATASET_TRANSLATED,
-            partition_cols=["lang"],
-            basename_template="part-{i}.parquet",
-            existing_data_behavior="overwrite_or_ignore",
-            filesystem=fs,
-        )
+    pq.write_to_dataset(
+        pa.Table.from_pandas(data),
+        root_path=URL_DATASET_TRANSLATED,
+        partition_cols=["lang"],
+        basename_template="part-{i}.parquet",
+        existing_data_behavior="overwrite_or_ignore",
+        filesystem=fs,
+    )
