@@ -8,16 +8,15 @@ from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputPar
 from tqdm import tqdm
 
 from src.constants.llm import (
+    BATCH_SIZE,
     DO_SAMPLE,
     LLM_MODEL,
     MAX_NEW_TOKEN,
     RETURN_FULL_TEXT,
     TEMPERATURE,
-    BATCH_SIZE,
 )
-from src.constants.paths import URL_DATASET_PREDICTED, URL_LABELS, URL_DATASET_PROMPTS
+from src.constants.paths import URL_DATASET_PREDICTED, URL_DATASET_PROMPTS, URL_LABELS
 from src.constants.utils import DEVICE
-
 from src.llm.build_llm import build_llm_model
 from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system, split_into_batches
@@ -37,6 +36,7 @@ llm, tokenizer = build_llm_model(
     quantization_config=True,
     config=True,
     token=os.getenv("HF_TOKEN"),
+    generation_args=generation_args,
     device=DEVICE,
 )
 

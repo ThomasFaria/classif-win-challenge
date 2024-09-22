@@ -30,7 +30,7 @@ from src.constants.vector_db import (
     SEARCH_ALGO,
 )
 from src.llm.build_llm import build_llm_model
-from src.prompting.prompts import RAG_PROMPT_TEMPLATE, format_docs, generate_valid_prompt
+from src.prompting.prompts import CLASSIF_PROMPT_TEMPLATE, format_docs, generate_valid_prompt
 from src.response.response_llm import LLMResponse
 from src.utils.data import get_file_system
 from src.utils.mapping import lang_mapping
@@ -68,11 +68,13 @@ retriever = load_retriever(
 with fs.open(URL_LABELS) as f:
     labels = pd.read_csv(f, dtype=str)
 
+parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
-def process_row(row):
+
+def process_row(row, parser):
     """Process a single row and return the prediction."""
-    description = row["TITLE_COLUMN"]
-    title = row["DESCRIPTION_COLUMN"]
+    description = row[TITLE_COLUMN]
+    title = row[DESCRIPTION_COLUMN]
     id = row.id
 
     try:
@@ -84,9 +86,8 @@ def process_row(row):
                 retrieved_docs_unique.append(item)
 
         # Generate the prompt and include the number of documents
-        parser = PydanticOutputParser(pydantic_object=LLMResponse)
         prompt_template = PromptTemplate.from_template(
-            template=RAG_PROMPT_TEMPLATE,
+            template=CLASSIF_PROMPT_TEMPLATE,
             partial_variables={"format_instructions": parser.get_format_instructions()},
         )
 
@@ -152,7 +153,7 @@ for lang in lang_mapping.lang_iso_2:
 
     results = []
     for row in tqdm(data.itertuples(), total=data.shape[0]):
-        result = process_row(row)
+        result = process_row(row, parser)
         results.append(result)
 
     # Merge results back to the original dataset

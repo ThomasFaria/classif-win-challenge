@@ -1,6 +1,6 @@
 from langchain_core.prompts import PromptTemplate
 
-RAG_PROMPT_TEMPLATE = """You are tasked with helping classify job advertisements into predefined occupational categories.
+CLASSIF_PROMPT_TEMPLATE = """You are tasked with helping classify job advertisements into predefined occupational categories.
 
 Given a job advertisement description and a list of the most relevant occupational categories, your goal is to select the single most appropriate occupational category for the job based on the description and its title.
 
@@ -14,6 +14,21 @@ Relevant Occupational Categories:
 {proposed_categories}
 
 Please choose the best occupational category based on the description and give a likelihood estimate between 0 and 1 for your confidence.
+{format_instructions}
+"""
+
+TRANSLATION_PROMPT_TEMPLATE_DESC = """Please translate the following job description from {source_language} to English. The goal of this translation is to extract and accurately convey the core information of the job. It is preferred to shorten or summarize where possible while preserving the key information required for classification.
+
+Text for translation:
+{txt_to_translate}
+
+{format_instructions}
+"""
+
+TRANSLATION_PROMPT_TEMPLATE_TITLE = """Please translate the following job title from {source_language} to English. Do not include any additional information or context, only the literal translation of the job title.
+Text for translation:
+{txt_to_translate}
+
 {format_instructions}
 """
 
@@ -103,7 +118,7 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
 
     # Generate the prompt and include the number of documents
     prompt_template = PromptTemplate.from_template(
-        template=RAG_PROMPT_TEMPLATE,
+        template=CLASSIF_PROMPT_TEMPLATE,
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
 

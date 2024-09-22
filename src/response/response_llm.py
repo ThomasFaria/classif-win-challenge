@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import BaseModel, Field
+
 from src.constants.utils import ISCO_CODES
 
 
@@ -9,7 +10,7 @@ class LLMResponse(BaseModel):
 
     Attributes:
         codable (bool): True if enough information is provided to decide
-            classification code, False otherwise.
+            classification code.
         class_code (Optional[str]): ISCO classification code Empty if codable=False
         likelihood (Optional[float]): Likelihood of this soc_code with a value between 0 and 1.
     """
@@ -27,6 +28,19 @@ class LLMResponse(BaseModel):
     likelihood: Optional[float] = Field(
         description="Likelihood of this class_code with value between 0 and 1."
     )
+
+
+class TranslatorResponse(BaseModel):
+    """Represents a response model for translation assignment.
+
+    Attributes:
+        translated (bool): True if translated.
+        translation (Optional[str]): Translation
+    """
+
+    translated: bool = Field()
+
+    translation: Optional[str] = Field()
 
 
 def process_response(row: tuple, parser, labels) -> dict:
@@ -61,7 +75,7 @@ def process_response(row: tuple, parser, labels) -> dict:
     except ValueError as parse_error:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
-        validated_response = LLMResponse(codable=False)
+        validated_response = LLMResponse(codable=False, class_code=None, likelihood=None)
 
     # Validate the parsed class code against ISCO_CODES (International Standard Classification of Occupations).
     if validated_response.class_code not in ISCO_CODES:
@@ -84,4 +98,23 @@ def process_response(row: tuple, parser, labels) -> dict:
         "label_code": label_code,  # Add the label corresponding to the class code, if valid.
         "lang": row.lang,  # Include the language metadata.
         "prompt": row.prompt,  # Include the original prompt metadata.
+    }
+
+
+def process_translation(row: tuple, translated_col: str, parser) -> dict:
+    col = getattr(row, translated_col)
+    row_id = row.id  # Extract the row's unique identifier.
+
+    try:
+        # Attempt to parse the response using the provided parser.
+        validated_response = parser.parse(col)
+    except ValueError as parse_error:
+        # Log an error and return an un-codable response if parsing fails.
+        print(f"Error processing row with id {row_id}: {parse_error}")
+        validated_response = TranslatorResponse(translated=False, translation=None)
+
+    # Return a dictionary containing the processed response details along with row metadata.
+    return {
+        **validated_response.dict(),  # Unpack the parsed response details.
+        "id": row_id,  # Include the row's ID.
     }
