@@ -73,10 +73,16 @@ def process_response(row: tuple, parser, labels) -> dict:
     try:
         # Attempt to parse the response using the provided parser.
         validated_response = parser.parse(response)
+        # Ensure translation is a string, not a dict. Sometimes it returns a dict but it contains the translation
+        if isinstance(validated_response.translation, dict):
+            validated_response.class_code = json.dumps(validated_response.class_code)
+
     except ValueError as parse_error:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
-        validated_response = LLMResponse(codable=False, class_code=None, likelihood=None)
+        validated_response = LLMResponse(
+            codable=False, class_code=validated_response.class_code, likelihood=None
+        )
 
     # Validate the parsed class code against ISCO_CODES (International Standard Classification of Occupations).
     if validated_response.class_code not in ISCO_CODES:
@@ -116,7 +122,9 @@ def process_translation(row: tuple, translated_col: str, parser) -> dict:
     except ValueError as parse_error:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
-        validated_response = TranslatorResponse(translated=False, translation=None)
+        validated_response = TranslatorResponse(
+            translated=False, translation=validated_response.translation
+        )
 
     # Return a dictionary containing the processed response details along with row metadata.
     return {
