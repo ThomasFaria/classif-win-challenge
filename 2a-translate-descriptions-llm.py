@@ -70,7 +70,7 @@ def create_prompt(batch, col):
     )
 
 
-for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
+for lang_iso_2, lang in zip(lang_mapping.lang_iso_2[::-1], lang_mapping.lang[::-1]):
     data = (
         ds.dataset(
             URL_DATASET_WITH_LANG.replace("s3://", ""),
