@@ -34,7 +34,7 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
-            python translate-descriptions-llm.py
+            python 2a-translate-descriptions-llm.py
 
         volumeMounts:
           - mountPath: /dev/shm
