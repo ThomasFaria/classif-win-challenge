@@ -62,7 +62,7 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
         .to_table()
         .filter((ds.field("lang") == f"lang={lang_iso_2}"))
         .to_pandas()
-    ).head(10)
+    )
 
     if data.empty:
         continue
@@ -88,7 +88,7 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
                     partial_variables={"format_instructions": parser.get_format_instructions()},
                 ).format(
                     **{
-                        "source_language": "French",
+                        "source_language": lang,
                         "txt_to_translate": txt_to_translate,
                     }
                 )
@@ -105,7 +105,7 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
 
         results_title = []
         results_desc = []
-        for row in tqdm(data.itertuples(), total=data.shape[0]):
+        for row in data.itertuples():
             result_title = process_translation(row, f"{TITLE_COLUMN}_en", parser)
             result_desc = process_translation(row, f"{DESCRIPTION_COLUMN}_en", parser)
             results_title.append(result_title)
