@@ -73,8 +73,8 @@ def process_response(row: tuple, parser, labels) -> dict:
     try:
         # Attempt to parse the response using the provided parser.
         validated_response = parser.parse(response)
-        # Ensure translation is a string, not a dict. Sometimes it returns a dict but it contains the translation
-        if isinstance(validated_response.translation, dict):
+        # Ensure class_code is a string, not a dict. Sometimes it returns a dict but it contains the class_code
+        if isinstance(validated_response.class_code, dict):
             validated_response.class_code = json.dumps(validated_response.class_code)
 
     except ValueError as parse_error:
