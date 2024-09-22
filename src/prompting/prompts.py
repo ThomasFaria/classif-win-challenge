@@ -109,12 +109,8 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
     title = getattr(row, kwargs.get("title_column"))
     id = row.id
 
-    # Retrieve documents and make sure a document is not retrieved twice
+    # Retrieve documents
     retrieved_docs = retriever.invoke(" ".join([title, description]))
-    retrieved_docs_unique = []
-    for item in retrieved_docs:
-        if item not in retrieved_docs_unique:
-            retrieved_docs_unique.append(item)
 
     # Generate the prompt and include the number of documents
     prompt_template = PromptTemplate.from_template(
@@ -128,7 +124,7 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
         tokenizer,
         title=title,
         description=description,
-        retrieved_docs=retrieved_docs_unique,
+        retrieved_docs=retrieved_docs,
     )
 
     return {"id": id, "prompt": prompt}

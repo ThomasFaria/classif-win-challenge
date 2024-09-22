@@ -46,7 +46,7 @@ def build_llm_model(
 
     # Load LLM tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name, use_fast=True, device_map="auto", token=configs["token"]
+        model_name, use_fast=True, device_map=device, token=configs["token"]
     )
 
     # Check if tokenizer has a pad_token; if not, set it to eos_token
