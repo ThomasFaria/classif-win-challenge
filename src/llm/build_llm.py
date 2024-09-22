@@ -14,6 +14,7 @@ def build_llm_model(
     config: bool = False,
     token=None,
     generation_args: dict = None,
+    device="auto",
 ):
     """
     Create the llm model
@@ -62,7 +63,7 @@ def build_llm_model(
         tokenizer=tokenizer,
         max_new_tokens=generation_args.get("max_new_tokens", 2000),
         return_full_text=generation_args.get("return_full_text", False),
-        device_map="auto",
+        device_map=device,
         do_sample=generation_args.get("do_sample", True),
         temperature=generation_args.get("temperature", 0.2),
     )
