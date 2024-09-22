@@ -23,8 +23,10 @@ from src.prompting.prompts import (
     TRANSLATION_PROMPT_TEMPLATE_TITLE,
 )
 from src.response.response_llm import TranslatorResponse, process_translation
-from src.utils.data import get_file_system, split_into_batches
+from src.utils.data import get_file_system
 from src.utils.mapping import lang_mapping
+from datasets import Dataset
+
 
 fs = get_file_system()
 parser = PydanticOutputParser(pydantic_object=TranslatorResponse)
@@ -49,6 +51,23 @@ TITLE_COLUMN = "title_clean"
 DESCRIPTION_COLUMN = "description_truncated"
 
 fs = get_file_system()
+
+
+def create_prompt(batch, col):
+    template = (
+        TRANSLATION_PROMPT_TEMPLATE_DESC
+        if batch[col] == DESCRIPTION_COLUMN
+        else TRANSLATION_PROMPT_TEMPLATE_TITLE
+    )
+    return PromptTemplate.from_template(
+        template=template,
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    ).format(
+        **{
+            "source_language": lang,
+            "txt_to_translate": batch[col],
+        }
+    )
 
 
 for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
@@ -76,30 +95,24 @@ for lang_iso_2, lang in zip(lang_mapping.lang_iso_2, lang_mapping.lang):
         data.loc[:, f"{DESCRIPTION_COLUMN}_en"] = data[DESCRIPTION_COLUMN]
     else:
         print(f"Translating texts from {lang} to English")
-        for col in [TITLE_COLUMN, DESCRIPTION_COLUMN]:
-            template = (
-                TRANSLATION_PROMPT_TEMPLATE_DESC
-                if col == DESCRIPTION_COLUMN
-                else TRANSLATION_PROMPT_TEMPLATE_TITLE
-            )
-            txt_to_translate = [
-                PromptTemplate.from_template(
-                    template=template,
-                    partial_variables={"format_instructions": parser.get_format_instructions()},
-                ).format(
-                    **{
-                        "source_language": lang,
-                        "txt_to_translate": txt_to_translate,
-                    }
-                )
-                for txt_to_translate in data[col]
-            ]
 
-            batches = split_into_batches(txt_to_translate, BATCH_SIZE_TRANSLATION)
+        dataset = Dataset.from_dict(data)
+
+        for col in [TITLE_COLUMN, DESCRIPTION_COLUMN]:
+            dataset = dataset.map(
+                lambda batch: {f"prompt_{col}": create_prompt(batch, col)},
+                batched=False,  # Disable batching here to process one row at a time for the prompt creation
+            )
+
             translations = []
-            for batch in tqdm(batches, total=len(batches)):
-                response_batch = llm.generate(prompts=batch)
-                translations.append(response_batch.generations)
+            for i in tqdm(range(0, len(dataset), BATCH_SIZE_TRANSLATION)):
+                batch_prompts = dataset[i : i + BATCH_SIZE_TRANSLATION][f"prompt_{col}"]
+                response_batch = llm.generate(
+                    prompts=batch_prompts
+                )  # Use generate for batch processing
+                translations.extend(
+                    [gen[0].text for gen in response_batch.generations]
+                )  # Extract generated text from each response
 
             data.loc[:, f"{col}_en"] = [response[0].text for response in sum(translations, [])]
 

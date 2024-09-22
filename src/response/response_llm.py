@@ -1,4 +1,5 @@
 from typing import Optional
+import json
 
 from pydantic import BaseModel, Field
 
@@ -108,6 +109,10 @@ def process_translation(row: tuple, translated_col: str, parser) -> dict:
     try:
         # Attempt to parse the response using the provided parser.
         validated_response = parser.parse(col)
+        # Ensure translation is a string, not a dict. Sometimes it returns a dict but it contains the translation
+        if isinstance(validated_response.translation, dict):
+            validated_response.translation = json.dumps(validated_response.translation)
+
     except ValueError as parse_error:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
