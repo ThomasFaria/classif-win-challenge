@@ -1,2 +1,2 @@
-# codif-ape-nace-revision
-Centralized repo on nace revision
+# classif-win-challenge
+Centralized repo on classif-win-challenge
