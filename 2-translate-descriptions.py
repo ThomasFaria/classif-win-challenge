@@ -67,8 +67,8 @@ def main(title_column: str, description_column: str, list_country: list):
         # Reformat partionnning column
         data.loc[:, "lang"] = data.loc[:, "lang"].str.replace("lang=", "")
 
-        if lang_iso_2 == "en":
-            # We do not perform translation when text is in english
+        if lang_iso_2 in ["en", "un"]:
+            # We do not perform translation when text is in english or undefined (bad detected score)
             data.loc[:, f"{title_column}_en"] = data[title_column]
             data.loc[:, f"{description_column}_en"] = data[description_column]
         else:
