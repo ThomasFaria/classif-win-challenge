@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: run-translate-desc
+  generateName: run-translate-desc-
 spec:
   serviceAccountName: workflow
   volumes:
@@ -34,8 +34,9 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
-            python 2a-translate-descriptions-llm.py
-
+            python 2a-translate-descriptions-llm.py --title_col "title_clean" --description_col "description_truncated" --languages \
+              el
+        # en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: run-detect-lang
+  generateName: run-detect-lang-
 spec:
   serviceAccountName: workflow
   volumes:

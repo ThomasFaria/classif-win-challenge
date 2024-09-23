@@ -136,3 +136,20 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
     )
 
     return {"id": id, "prompt": prompt}
+
+
+def create_translation_prompt(batch, col, parser, lang, **kwargs):
+    template = (
+        TRANSLATION_PROMPT_TEMPLATE_DESC
+        if batch[col] == kwargs.get("description_column")
+        else TRANSLATION_PROMPT_TEMPLATE_TITLE
+    )
+    return PromptTemplate.from_template(
+        template=template,
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    ).format(
+        **{
+            "source_language": lang,
+            "txt_to_translate": batch[col],
+        }
+    )
