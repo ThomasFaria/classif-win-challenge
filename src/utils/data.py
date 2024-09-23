@@ -31,9 +31,17 @@ def extract_info(input_str):
 
     # Find the index of the examples
     try:
-        examples_index = lines.index("Examples of the occupations classified here:")
-    except ValueError:
-        return result  # Return only the description
+        # Try to find either of the example strings
+        examples_index = next(
+            lines.index(example)
+            for example in [
+                "Examples of the occupations classified here:",
+                "Example of the occupations classified here:",
+            ]
+            if example in lines
+        )
+    except (ValueError, StopIteration):
+        return "\n".join(result)  # Return only the description
 
     # add examples
     result.append(lines[examples_index])
