@@ -22,34 +22,28 @@ def split_into_batches(list, batch_size):
     return [list[i : i + batch_size] for i in range(0, len(list), batch_size)]
 
 
-def truncate_txt(input_str: str, phrases: list):
-    """
-    Truncate the input string before the first occurrence of any of the given phrases.
+def extract_info(input_str):
+    # Split the string by newlines
+    lines = [line.strip() for line in input_str.split("\n")]
 
-    Parameters:
-    input_str (str): The input text.
-    phrases (list): A list of phrases after which the text should be truncated.
+    # Store the first element of the list (the description)
+    result = [lines[0].strip()]
 
-    Returns:
-    str: The truncated string if any phrase is found, otherwise the original string.
-    """
-    # Initialize position to a value greater than the length of the input string
-    first_phrase_pos = len(input_str)
+    # Find the index of the examples
+    try:
+        examples_index = lines.index("Examples of the occupations classified here:")
+    except ValueError:
+        return result  # Return only the description
 
-    # Find the earliest occurrence of any phrase
-    for phrase in phrases:
-        phrase_pos = input_str.find(phrase)
+    # add examples
+    result.append(lines[examples_index])
+    for line in lines[examples_index + 1 :]:
+        if line.startswith("-"):
+            result.append(line.strip())
+        else:
+            break
 
-        # If the phrase is found and occurs earlier than the current found position
-        if phrase_pos != -1 and phrase_pos < first_phrase_pos:
-            first_phrase_pos = phrase_pos
-
-    # If no phrase is found, return the original string
-    if first_phrase_pos == len(input_str):
-        return input_str
-
-    # Return the truncated string up to the first found phrase
-    return input_str[:first_phrase_pos]
+    return "\n".join(result)
 
 
 multispace_regex = re.compile(r"\s\s+")

@@ -28,7 +28,7 @@ from src.constants.vector_db import (
 from src.llm.build_llm import build_llm_model
 from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
-from src.utils.data import get_file_system, truncate_txt
+from src.utils.data import get_file_system, extract_info
 from src.utils.mapping import lang_mapping
 from src.vector_db.document_chunker import chunk_documents
 
@@ -41,16 +41,7 @@ with fs.open(URL_LABELS) as f:
 
 
 if TRUNCATE_LABELS_DESCRIPTION:
-    labels.loc[:, "description"] = labels["description"].apply(
-        lambda x: truncate_txt(
-            x,
-            [
-                "Tasks include",
-                "Examples of the occupations classified here:",
-                "In such cases tasks would include",
-            ],
-        )
-    )
+    labels.loc[:, "description"] = labels["description"].apply(lambda x: extract_info(x))
 
 all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
 
@@ -74,9 +65,8 @@ print("Vector DB is built")
 
 _, tokenizer = build_llm_model(
     model_name=LLM_MODEL,
-    quantization_config=True,
-    config=True,
-    token=os.getenv("HF_TOKEN"),
+    hf_token=os.getenv("HF_TOKEN"),
+    device=DEVICE,
 )
 
 parser = PydanticOutputParser(pydantic_object=LLMResponse)
