@@ -81,7 +81,7 @@ def process_response(row: tuple, parser, labels) -> dict:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
         validated_response = LLMResponse(
-            codable=False, class_code=validated_response.class_code, likelihood=None
+            codable=False, class_code=None, likelihood=None, # TODO: fix itvalidated_response.translation
         )
 
     # Validate the parsed class code against ISCO_CODES (International Standard Classification of Occupations).
