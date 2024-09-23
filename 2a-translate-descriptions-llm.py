@@ -61,6 +61,7 @@ def main(title_column: str, description_column: str, list_country: list):
         )
 
         if data.empty:
+            print(f"No data found for language {lang}. Skipping...")
             continue
 
         # Reformat partionnning column
