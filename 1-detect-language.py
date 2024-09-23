@@ -8,7 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from src.constants.paths import URL_DATASET, URL_DATASET_WITH_LANG
 from src.detect_lang.detect import detect_language, process_data_lang_detec
 from src.utils.data import get_file_system
-from src.utils.mapping import id_881693105_desc
+from src.utils.mapping import id_881693105_desc, lang_mapping
 
 DESC_CUTOFF_SIZE = 500
 
@@ -33,6 +33,8 @@ data[["lang", "score"]] = (
 )
 # Set lang to undefined when score are low
 data['lang'] = data.apply(lambda row: 'un' if row['score'] < 0.4 else row['lang'], axis=1)
+# Set lang to undifined if not an EU language
+data['lang'] = data['lang'].where(data['lang'].isin(lang_mapping["lang_iso_2"]), 'un')
 
 # Truncate the description
 text_splitter = RecursiveCharacterTextSplitter(
