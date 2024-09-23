@@ -123,7 +123,7 @@ def process_translation(row: tuple, translated_col: str, parser) -> dict:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
         validated_response = TranslatorResponse(
-            translated=False, translation=validated_response.translation
+            translated=False, translation=None # TODO: fix itvalidated_response.translation
         )
 
     # Return a dictionary containing the processed response details along with row metadata.
