@@ -26,7 +26,7 @@ lang_mapping = pd.DataFrame(
         {"lang": "Slovenian", "lang_iso_2": "sl", "lang_iso_3": "slv_Latn"},
         {"lang": "Swedish", "lang_iso_2": "sv", "lang_iso_3": "swe_Latn"},
         {"lang": "Czech", "lang_iso_2": "cs", "lang_iso_3": "ces_Latn"},
-        {"lang": "Others", "lang_iso_2": "others", "lang_iso_3": "others_Latn"},
+        {"lang": "Others", "lang_iso_2": "un", "lang_iso_3": "und_Latn"},
     ]
 )
 

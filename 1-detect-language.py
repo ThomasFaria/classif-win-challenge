@@ -31,6 +31,8 @@ data[["lang", "score"]] = (
     .apply(detect_language)
     .apply(pd.Series)
 )
+# Set lang to undefined when score are low
+data['lang'] = data.apply(lambda row: 'un' if row['score'] < 0.4 else row['lang'], axis=1)
 
 # Truncate the description
 text_splitter = RecursiveCharacterTextSplitter(
