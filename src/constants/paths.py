@@ -12,4 +12,11 @@ URL_DATASET_PROMPTS = (
 URL_DATASET_PREDICTED = (
     "s3://projet-dedup-oja/challenge_classification/processed-data/predictions_by_lang"
 )
+
+URL_DATASET_PREDICTED_FINAL = (
+    "s3://projet-dedup-oja/challenge_classification/processed-data/predictions_final"
+)
+
 CHROMA_DB_LOCAL_DIRECTORY = "data/chroma_db"
+
+URL_SUBMISSIONS = "s3://projet-dedup-oja/challenge_classification/submissions"
