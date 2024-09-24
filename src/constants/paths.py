@@ -1,5 +1,7 @@
 URL_DATASET = "s3://projet-dedup-oja/challenge_classification/raw-data/wi_dataset.csv"
 URL_LABELS = "s3://projet-dedup-oja/challenge_classification/raw-data/wi_labels.csv"
+URL_LABELS_WITH_LANG = "s3://projet-dedup-oja/challenge_classification/raw-data/ESCO_by_lang"
+
 URL_DATASET_WITH_LANG = (
     "s3://projet-dedup-oja/challenge_classification/processed-data/wi_dataset_by_lang"
 )
