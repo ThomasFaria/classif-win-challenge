@@ -53,7 +53,7 @@ def extract_info(input_str):
 
     return "\n".join(result)
 
-
+eol_regex = re.compile(r"\r|\n")
 multispace_regex = re.compile(r"\s\s+")
 html_regex = re.compile(r"<[^<]+?>")
 white_regex = re.compile(r"\xa0")
