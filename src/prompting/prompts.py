@@ -35,10 +35,7 @@ Text for translation:
 
 def format_docs(docs: list):
     return "\n\n".join(
-        [
-            f"{i + 1}. {doc.metadata['code']} - {doc.metadata['label']}: {doc.page_content}"
-            for i, doc in enumerate(docs)
-        ]
+        [f"{doc.metadata['code']} - {doc.metadata['label']}: {doc.page_content}" for doc in docs]
     )
 
 

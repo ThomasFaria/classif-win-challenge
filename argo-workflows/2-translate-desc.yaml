@@ -36,7 +36,7 @@ spec:
             pip install -r requirements.txt &&
             python 2-translate-descriptions.py --title_col "title_clean" --description_col "description_truncated" --languages \
               un
-        # en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
+        # un en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
