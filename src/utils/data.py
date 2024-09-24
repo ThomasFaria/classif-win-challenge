@@ -53,6 +53,7 @@ def extract_info(input_str):
 
     return "\n".join(result)
 
+
 eol_regex = re.compile(r"\r|\n")
 multispace_regex = re.compile(r"\s\s+")
 html_regex = re.compile(r"<[^<]+?>")
@@ -60,6 +61,10 @@ white_regex = re.compile(r"\xa0")
 punctuation_regex = re.compile(r"[^\w\s]")
 underscore_regex = re.compile(r"_")
 star_regex = re.compile(r"(\*[\s]*)+")
+# regex pour détecter les URL
+url_regex = re.compile(r"(https?://(?:www\.)?[^\s/$.?#].[^\s]*)")
+javascript_regex = re.compile(r"You need to enable JavaScript to run this app")
+captcha_regex = re.compile(r"reCAPTCHA check page")
 
 # Liste des abréviations à détecter
 abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(?m/ž\)?|\(?f/n\)?|\(?b/f\)?|\(?άν/γυν\)?|\(?м/ж\)?"
@@ -71,6 +76,9 @@ def clean_text(text):
         return text
     text = html.unescape(text)
     text = html_regex.sub(" ", text)
+    text = url_regex.sub(" ", text)
+    text = javascript_regex.sub(" ", text)
+    text = captcha_regex.sub(" ", text)
     text = star_regex.sub(" <ANONYMOUS> ", text)
     text = white_regex.sub(" ", text)
     text = multispace_regex.sub(" ", text)
