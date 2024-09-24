@@ -53,7 +53,7 @@ def main(languages: list):
                 filesystem=fs,
             )
             .to_table()
-            .filter((ds.field("lang") == f"lang={lang}"))
+            .filter((ds.field("lang") == f"lang={lang}") & (ds.field("codable") == "codable=false"))
             .to_pandas()
         )
 
