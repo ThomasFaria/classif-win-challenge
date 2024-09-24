@@ -42,10 +42,10 @@ def detect_language(text: str) -> tuple:
 
 
 def process_data_lang_detec(data):
-    # Fill description where missing with title
-    data["description"] = data["description"].fillna(data["title"])
-
     # Apply the text cleaning function to both 'description' and 'title'
     data["description_clean"] = data["description"].apply(clean_text)
     data["title_clean"] = data["title"].apply(clean_text)
+
+    # Fill description where missing with title
+    data["description"] = data["description"].fillna(data["title"])
     return data
