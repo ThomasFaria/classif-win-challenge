@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: run-translate-desc-
+  generateName: create-prompts-
 spec:
   serviceAccountName: workflow
   volumes:
@@ -15,11 +15,11 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: translate-desc
-            template: run-translate-desc
+          - name: create-prompts
+            template: create-prompts
 
     # Worker templat
-    - name: run-translate-desc
+    - name: create-prompts
       nodeSelector:
         nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
       container:
@@ -34,9 +34,8 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
-            python 2-translate-descriptions.py --title_col "title_clean" --description_col "description_truncated" --languages \
-              el
-        # en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
+            python 3-build-vdb.py
+
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
