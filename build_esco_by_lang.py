@@ -2,7 +2,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from src.constants.paths import URL_LABELS_WITH_LANG
+from src.constants.paths import URL_LABELS_WITH_LANG_R, URL_LABELS_WITH_LANG_W
 from src.utils.mapping import lang_mapping
 
 import s3fs
@@ -31,12 +31,12 @@ exclusions = ['en', 'un']
 lang_list = [lang for lang in lang_mapping["lang_iso_2"] if lang not in exclusions]
 
 for lang in lang_list:
-    with fs.open(f"{URL_LABELS_WITH_LANG}/ISCOGroups_{lang}.csv") as f:
+    with fs.open(f"{URL_LABELS_WITH_LANG_R}/ISCOGroups_{lang}.csv") as f:
         isco = pd.read_csv(f, dtype=str)
         isco = isco[isco["code"].str.len() == 4].loc[:, ["code", "preferredLabel", "conceptUri"]].reset_index(drop=True).rename(columns={'iscoGroup': 'code', "preferredLabel" : "label", "conceptUri": "isco_uri"})
         isco.loc[:, "lang"] = lang
 
-    with fs.open(f"{URL_LABELS_WITH_LANG}/occupations_{lang}.csv") as f:
+    with fs.open(f"{URL_LABELS_WITH_LANG_R}/occupations_{lang}.csv") as f:
         occupations = pd.read_csv(f, dtype=str)
         occupations = occupations.groupby('iscoGroup').agg({
             'description': ' '.join,  # Concatenate descriptions with a space
@@ -46,7 +46,7 @@ for lang in lang_list:
 final_df = pd.concat(list_label, ignore_index=True)
 pq.write_to_dataset(
     pa.Table.from_pandas(final_df),
-    root_path=URL_LABELS_WITH_LANG+"/pq",
+    root_path=URL_LABELS_WITH_LANG_W,
     partition_cols=["lang"],
     basename_template="part-{i}.parquet",
     existing_data_behavior="overwrite_or_ignore",
