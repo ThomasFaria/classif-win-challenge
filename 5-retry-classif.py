@@ -19,7 +19,6 @@ from src.constants.llm import (
 )
 from src.constants.paths import (
     URL_DATASET_PREDICTED,
-    URL_DATASET_PROMPTS,
     URL_LABELS,
     URL_DATASET_PREDICTED_FINAL,
     URL_SUBMISSIONS,
@@ -66,24 +65,10 @@ def main(max_retry: int):
     data["codable"] = data["codable"].str.replace("codable=", "")
 
     data_uncoded = data[data["codable"] == "false"].copy()
+    newly_coded = pd.DataFrame(columns=data.columns)
 
-    # Make sure there is no None prompt (TODO: to fix)
-    prompts = (
-        ds.dataset(
-            URL_DATASET_PROMPTS.replace("s3://", ""),
-            partitioning=["lang"],
-            format="parquet",
-            filesystem=fs,
-        )
-        .to_table()
-        .to_pandas()
-    )
-    data_uncoded = pd.merge(
-        data_uncoded, prompts.loc[:, ["id", "prompt"]], on="id", how="inner", suffixes=("_left", "")
-    ).drop("prompt_left", axis=1)
-
-    for i in range(1, max_retry + 1):
-        print(f"Retrying classification for the {i} time")
+    for it in range(1, max_retry + 1):
+        print(f"Retrying classification for the {it} time")
         dataset = Dataset.from_dict(data_uncoded)
 
         responses = []
@@ -113,19 +98,16 @@ def main(max_retry: int):
         results_df = pd.DataFrame(results)
         results_df["codable"] = results_df["codable"].astype(str).str.lower()
 
-        # We write back the new coded in the original dataset
-        cols = data.columns
-        data = pd.merge(data, results_df, on="id", how="left", suffixes=("", "_new"))
-
-        # Now update the values in the large DataFrame with the new values from the small DataFrame
-        for col in results_df.columns:
-            if col != "id":  # Skip the 'id' column, we don't want to update it
-                data.loc[:, col] = data[col + "_new"].combine_first(data[col])
-        data = data[cols]
+        newly_coded = pd.concat([newly_coded] + [results_df[results_df["codable"] == "true"]])
         data_uncoded = results_df[results_df["codable"] == "false"]
 
+    # Concatenate the newly coded data with the already predicted data + still uncoded data
+    data_final = pd.concat([data[~data["id"].isin(newly_coded["id"].to_list())]] + [newly_coded])
+
+    assert data_final.shape[0] == 25665
+
     pq.write_to_dataset(
-        pa.Table.from_pandas(data),
+        pa.Table.from_pandas(data_final),
         root_path=URL_DATASET_PREDICTED_FINAL,
         partition_cols=["lang", "codable"],
         basename_template="part-{i}.parquet",
@@ -136,9 +118,9 @@ def main(max_retry: int):
     with fs.open(
         f"{URL_SUBMISSIONS}/{datetime.now().strftime('%Y-%m-%d-%H-%M')}/classification.csv", "w"
     ) as f:
-        data[data["codable"] == "true"].loc[:, ["id", "class_code"]].to_csv(
-            f, header=False, index=False
-        )
+        submissions = data_final.loc[:, ["id", "class_code", "codable"]]
+        submissions.loc[submissions["codable"] == "false", "class_code"] = None
+        submissions.loc[:, ["id", "class_code"]].fillna("0110").to_csv(f, header=False, index=False)
 
 
 if __name__ == "__main__":
