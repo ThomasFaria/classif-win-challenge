@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import pandas as pd
@@ -29,92 +30,116 @@ from src.llm.build_llm import build_llm_model
 from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
 from src.utils.data import get_file_system, extract_info
-from src.utils.mapping import lang_mapping
 from src.vector_db.document_chunker import chunk_documents
 
-TITLE_COLUMN = "title_clean_en"
-DESCRIPTION_COLUMN = "description_truncated_en"
-fs = get_file_system()
 
-with fs.open(URL_LABELS) as f:
-    labels = pd.read_csv(f, dtype=str)
+def main(title_column: str, description_column: str, languages: list):
+    fs = get_file_system()
+    parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
+    with fs.open(URL_LABELS) as f:
+        labels = pd.read_csv(f, dtype=str)
 
-if TRUNCATE_LABELS_DESCRIPTION:
-    labels.loc[:, "description"] = labels["description"].apply(lambda x: extract_info(x))
+    if TRUNCATE_LABELS_DESCRIPTION:
+        labels.loc[:, "description"] = labels["description"].apply(lambda x: extract_info(x))
 
-all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
+    all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
 
-emb_model = HuggingFaceEmbeddings(
-    model_name=EMBEDDING_MODEL,
-    model_kwargs={"device": DEVICE},
-    encode_kwargs={"normalize_embeddings": True},
-    show_progress=False,
-)
-db = Chroma.from_documents(
-    collection_name=COLLECTION_NAME,
-    documents=all_splits,
-    persist_directory=CHROMA_DB_LOCAL_DIRECTORY,
-    embedding=emb_model,
-    client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
-)
+    emb_model = HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL,
+        model_kwargs={"device": DEVICE},
+        encode_kwargs={"normalize_embeddings": True},
+        show_progress=False,
+    )
+    db = Chroma.from_documents(
+        collection_name=COLLECTION_NAME,
+        documents=all_splits,
+        persist_directory=CHROMA_DB_LOCAL_DIRECTORY,
+        embedding=emb_model,
+        client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
+    )
 
-retriever = db.as_retriever(search_type=SEARCH_ALGO, search_kwargs={"k": MAX_CODE_RETRIEVED})
+    retriever = db.as_retriever(search_type=SEARCH_ALGO, search_kwargs={"k": MAX_CODE_RETRIEVED})
 
-print("Vector DB is built")
+    print("Vector DB is built")
 
-_, tokenizer = build_llm_model(
-    model_name=LLM_MODEL,
-    hf_token=os.getenv("HF_TOKEN"),
-    device=DEVICE,
-)
+    _, tokenizer = build_llm_model(
+        model_name=LLM_MODEL,
+        hf_token=os.getenv("HF_TOKEN"),
+        device=DEVICE,
+    )
 
-parser = PydanticOutputParser(pydantic_object=LLMResponse)
+    for lang in languages:
+        print(f"Creating prompts for language: {lang}")
 
-for lang in lang_mapping.lang_iso_2:
-    print(f"Creating prompts for language: {lang}")
+        # Load the dataset
+        data = (
+            ds.dataset(
+                URL_DATASET_TRANSLATED.replace("s3://", ""),
+                partitioning=["lang"],
+                format="parquet",
+                filesystem=fs,
+            )
+            .to_table()
+            .filter((ds.field("lang") == f"lang={lang}"))
+            .to_pandas()
+        )
 
-    # Load the dataset
-    data = (
-        ds.dataset(
-            URL_DATASET_TRANSLATED.replace("s3://", ""),
-            partitioning=["lang"],
-            format="parquet",
+        if data.empty:
+            print(f"No data found for language {lang}. Skipping...")
+            continue
+
+        data["lang"] = data["lang"].str.replace("lang=", "")
+
+        prompts = []
+        for row in tqdm(data.itertuples(), total=data.shape[0]):
+            prompt = create_prompt_with_docs(
+                row,
+                parser,
+                tokenizer,
+                retriever,
+                **{
+                    "description_column": description_column,
+                    "title_column": title_column,
+                    "prompt_max_token": PROMPT_MAX_TOKEN,
+                },
+            )
+            prompts.append(prompt)
+
+        # Merge results back to the original dataset
+        predictions = data.merge(pd.DataFrame(prompts), on="id")
+        pq.write_to_dataset(
+            pa.Table.from_pandas(predictions),
+            root_path=URL_DATASET_PROMPTS,
+            partition_cols=["lang"],
+            basename_template="part-{i}.parquet",
+            existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,
         )
-        .to_table()
-        .filter((ds.field("lang") == f"lang={lang}"))
-        .to_pandas()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Translation function")
+
+    # Add arguments for title, description, and languages
+    parser.add_argument(
+        "--title_col", type=str, required=True, help="Title column you want to use for prompts"
+    )
+    parser.add_argument(
+        "--description_col",
+        type=str,
+        required=True,
+        help="Description column you want to use for prompts",
+    )
+    parser.add_argument(
+        "--languages",
+        nargs="+",
+        required=True,
+        help="List of source languages for which you want to create prompts",
     )
 
-    if data.empty:
-        print(f"No data found for language {lang}. Skipping...")
-        continue
+    # Parse the command-line arguments
+    args = parser.parse_args()
 
-    data["lang"] = data["lang"].str.replace("lang=", "")
-
-    prompts = []
-    for row in tqdm(data.itertuples(), total=data.shape[0]):
-        prompt = create_prompt_with_docs(
-            row,
-            parser,
-            tokenizer,
-            retriever,
-            **{
-                "description_column": DESCRIPTION_COLUMN,
-                "title_column": TITLE_COLUMN,
-                "prompt_max_token": PROMPT_MAX_TOKEN,
-            },
-        )
-        prompts.append(prompt)
-
-    # Merge results back to the original dataset
-    predictions = data.merge(pd.DataFrame(prompts), on="id")
-    pq.write_to_dataset(
-        pa.Table.from_pandas(predictions),
-        root_path=URL_DATASET_PROMPTS,
-        partition_cols=["lang"],
-        basename_template="part-{i}.parquet",
-        existing_data_behavior="overwrite_or_ignore",
-        filesystem=fs,
-    )
+    # Call the main function with parsed arguments
+    main(args.title_col, args.description_col, args.languages)
