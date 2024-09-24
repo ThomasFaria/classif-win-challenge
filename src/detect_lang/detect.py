@@ -49,5 +49,5 @@ def process_data_lang_detec(data):
     # Fill description where missing with title
     data["description"] = data["description"].fillna(data["title"])
     data["description_clean"] = data["description_clean"].fillna(data["title_clean"])
-
+    data.loc[data["description_clean"].str.strip() == '', "description_clean"] = data["title_clean"]
     return data
