@@ -34,9 +34,8 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
-            python 3-build-vdb.py --title_col "title_clean_en" --description_col "description_truncated_en" --languages \
-              un
-        # un en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
+            python 3-build-vdb.py --title_col "title_clean" --description_col "description_truncated" --languages \
+              un en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
 
         volumeMounts:
           - mountPath: /dev/shm
