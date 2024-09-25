@@ -1,5 +1,3 @@
-import logging
-
 import pandas as pd
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DataFrameLoader
@@ -43,16 +41,16 @@ def chunk_documents(
     docs_processed = text_splitter.split_documents(document_list)
 
     # Remove duplicates
-    unique_texts = set()
-    docs_processed_unique = []
-    for doc in docs_processed:
-        if doc.page_content not in unique_texts:
-            unique_texts.add(doc.page_content)
-            docs_processed_unique.append(doc)
+    #    unique_texts = set()
+    #    docs_processed_unique = []
+    #    for doc in docs_processed:
+    #        if doc.page_content not in unique_texts:
+    #            unique_texts.add(doc.page_content)
+    #            docs_processed_unique.append(doc)
 
-    logging.info(f"Number of created chunks: {len(docs_processed_unique)} in the Vector Database")
+    print(f"Number of created chunks: {len(docs_processed)} in the Vector Database")
 
-    return docs_processed_unique
+    return docs_processed
 
 
 def compute_autotokenizer_chunk_size(hf_tokenizer_name: str) -> tuple:

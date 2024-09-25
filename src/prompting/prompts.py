@@ -1,8 +1,9 @@
 from langchain_core.prompts import PromptTemplate
+from langchain_community.document_loaders import DataFrameLoader
+from src.utils.mapping import lang_mapping
 
-CLASSIF_PROMPT_TEMPLATE = """You are tasked with helping classify job advertisements into predefined occupational categories.
-
-Given a job advertisement description and a list of the most relevant occupational categories, your goal is to select the single most appropriate occupational category for the job based on the description and its title.
+CLASSIF_PROMPT_TEMPLATE = """Your goal is to select the single most appropriate occupational category for the job based on the description, its title and a list of the most relevant occupational categories selected.
+The job title and description are in their original language : {language}.
 
 Job Ad Title:
 {title}
@@ -13,7 +14,6 @@ Job Ad Description:
 Relevant Occupational Categories:
 {proposed_categories}
 
-Please choose the best occupational category based on the description and give a likelihood estimate between 0 and 1 for your confidence.
 {format_instructions}
 """
 
@@ -62,6 +62,9 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
     # Extracting relevant fields from kwargs
     title = kwargs.get("title", "")
     description = kwargs.get("description", "")
+    language = lang_mapping.loc[
+        lang_mapping["lang_iso_2"] == kwargs.get("language", ""), "lang"
+    ].values[0]
     retrieved_docs = kwargs.get("retrieved_docs", [])
 
     # Initialize prompt with all documents
@@ -70,6 +73,7 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
         **{
             "title": title,
             "description": description,
+            "language": language,
             "proposed_categories": format_docs(current_docs),
         }
     )
@@ -82,6 +86,7 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
             **{
                 "title": title,
                 "description": description,
+                "language": language,
                 "proposed_categories": format_docs(current_docs),
             }
         )
@@ -93,6 +98,7 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
             **{
                 "title": title,
                 "description": description,
+                "language": language,
                 "proposed_categories": format_docs(current_docs),
             }
         )
@@ -101,21 +107,18 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
     return prompt, num_documents_included
 
 
-def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
+def create_prompt_with_docs(row, parser, tokenizer, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
-    description = (
-        description
-        if description is not None
-        else getattr(row, kwargs.get("description_column").replace("_en", ""))
-    )
     title = getattr(row, kwargs.get("title_column"))
-    title = (
-        title if title is not None else getattr(row, kwargs.get("title_column").replace("_en", ""))
-    )
+    lang = row.lang
     id = row.id
 
     # Retrieve documents
     retrieved_docs = retriever.invoke(" ".join([title, description]))
+
+    retrieved_codes = set([doc.metadata["code"] for doc in retrieved_docs])
+    relevant_code_en = labels_en.loc[labels_en["code"].isin(retrieved_codes)]
+    retrieved_docs_en = DataFrameLoader(relevant_code_en, page_content_column="description").load()
 
     # Generate the prompt and include the number of documents
     prompt_template = PromptTemplate.from_template(
@@ -129,7 +132,8 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, **kwargs):
         tokenizer,
         title=title,
         description=description,
-        retrieved_docs=retrieved_docs,
+        retrieved_docs=retrieved_docs_en,
+        language=lang,
     )
 
     return {"id": id, "prompt": prompt}

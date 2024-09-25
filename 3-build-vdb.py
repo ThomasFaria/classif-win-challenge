@@ -15,12 +15,12 @@ from src.constants.llm import LLM_MODEL, PROMPT_MAX_TOKEN
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
     URL_DATASET_PROMPTS,
-    URL_DATASET_TRANSLATED,
     URL_LABELS,
+    URL_LABELS_WITH_LANG_W,
+    URL_DATASET_WITH_LANG,
 )
 from src.constants.utils import DEVICE
 from src.constants.vector_db import (
-    COLLECTION_NAME,
     EMBEDDING_MODEL,
     MAX_CODE_RETRIEVED,
     SEARCH_ALGO,
@@ -37,45 +37,59 @@ def main(title_column: str, description_column: str, languages: list):
     fs = get_file_system()
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
-    with fs.open(URL_LABELS) as f:
-        labels = pd.read_csv(f, dtype=str)
-
-    if TRUNCATE_LABELS_DESCRIPTION:
-        labels.loc[:, "description"] = labels["description"].apply(lambda x: extract_info(x))
-
-    all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
-
     emb_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
         model_kwargs={"device": DEVICE},
         encode_kwargs={"normalize_embeddings": True},
         show_progress=False,
     )
-    db = Chroma.from_documents(
-        collection_name=COLLECTION_NAME,
-        documents=all_splits,
-        persist_directory=CHROMA_DB_LOCAL_DIRECTORY,
-        embedding=emb_model,
-        client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
-    )
-
-    retriever = db.as_retriever(search_type=SEARCH_ALGO, search_kwargs={"k": MAX_CODE_RETRIEVED})
-
-    print("Vector DB is built")
-
     _, tokenizer = build_llm_model(
         model_name=LLM_MODEL,
         hf_token=os.getenv("HF_TOKEN"),
         device=DEVICE,
     )
 
+    with fs.open(URL_LABELS) as f:
+        labels_en = pd.read_csv(f, dtype=str)
+
+    if TRUNCATE_LABELS_DESCRIPTION:
+        labels_en.loc[:, "description"] = labels_en["description"].apply(lambda x: extract_info(x))
+
     for lang in languages:
         print(f"Creating prompts for language: {lang}")
+
+        labels = (
+            ds.dataset(
+                URL_LABELS_WITH_LANG_W.replace("s3://", ""),
+                partitioning=["lang"],
+                format="parquet",
+                filesystem=fs,
+            )
+            .to_table()
+            .filter(
+                (ds.field("lang") == f"lang={lang if lang != "un" else "en"}")
+            )  # If un used english labels for vdb
+            .to_pandas()
+        )
+
+        all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
+
+        db = Chroma.from_documents(
+            collection_name=f"lang-{lang}",
+            documents=all_splits,
+            persist_directory=CHROMA_DB_LOCAL_DIRECTORY,
+            embedding=emb_model,
+            client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
+        )
+
+        retriever = db.as_retriever(
+            search_type=SEARCH_ALGO, search_kwargs={"k": MAX_CODE_RETRIEVED}
+        )
 
         # Load the dataset
         data = (
             ds.dataset(
-                URL_DATASET_TRANSLATED.replace("s3://", ""),
+                URL_DATASET_WITH_LANG.replace("s3://", ""),
                 partitioning=["lang"],
                 format="parquet",
                 filesystem=fs,
@@ -98,6 +112,7 @@ def main(title_column: str, description_column: str, languages: list):
                 parser,
                 tokenizer,
                 retriever,
+                labels_en,
                 **{
                     "description_column": description_column,
                     "title_column": title_column,
