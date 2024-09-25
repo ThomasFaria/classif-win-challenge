@@ -7,14 +7,7 @@ from src.constants.utils import ISCO_CODES
 
 
 class LLMResponse(BaseModel):
-    """Represents a response model for classification code assignment.
-
-    Attributes:
-        codable (bool): True if enough information is provided to decide
-            classification code.
-        class_code (Optional[str]): ISCO classification code Empty if codable=False
-        likelihood (Optional[float]): Likelihood of this soc_code with a value between 0 and 1.
-    """
+    """Represents a response model for classification code assignment."""
 
     codable: bool = Field(
         description="""True if enough information is provided to decide
@@ -81,7 +74,9 @@ def process_response(row: tuple, parser, labels) -> dict:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
         validated_response = LLMResponse(
-            codable=False, class_code=None, likelihood=None, # TODO: fix itvalidated_response.translation
+            codable=False,
+            class_code=None,
+            likelihood=None,  # TODO: fix itvalidated_response.translation
         )
 
     # Validate the parsed class code against ISCO_CODES (International Standard Classification of Occupations).
@@ -123,7 +118,8 @@ def process_translation(row: tuple, translated_col: str, parser) -> dict:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
         validated_response = TranslatorResponse(
-            translated=False, translation=None # TODO: fix itvalidated_response.translation
+            translated=False,
+            translation=None,  # TODO: fix itvalidated_response.translation
         )
 
     # Return a dictionary containing the processed response details along with row metadata.
