@@ -79,7 +79,7 @@ def clean_text(text):
     text = url_regex.sub(" ", text)
     text = javascript_regex.sub(" ", text)
     text = captcha_regex.sub(" ", text)
-    text = star_regex.sub(" <ANONYMOUS> ", text)
+    text = star_regex.sub(" ", text)
     text = white_regex.sub(" ", text)
     text = multispace_regex.sub(" ", text)
     return text.strip()
