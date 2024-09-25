@@ -75,6 +75,7 @@ def main(title_column: str, description_column: str, languages: list):
             print(f"No label found for language {lang}. Skipping...")
             continue
 
+        labels.fillna("", inplace=True)
         all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
 
         db = Chroma.from_documents(
