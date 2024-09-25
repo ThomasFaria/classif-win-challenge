@@ -23,7 +23,7 @@ from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system
 
 
-def main(languages: list):
+def main(languages: list, quarter: int = None):
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
     fs = get_file_system()
 
@@ -61,6 +61,14 @@ def main(languages: list):
             print(f"No data found for language {lang}. Skipping...")
             continue
 
+        if quarter is not None:
+            idx_for_subset = [
+                ((data.shape[0] // 4) * (quarter - 1)),
+                ((data.shape[0] // 4) * quarter),
+            ]
+            idx_for_subset[-1] = idx_for_subset[-1] if quarter != 4 else data.shape[0]
+            data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
+
         # Reformat partionnning column
         data["lang"] = data["lang"].str.replace("lang=", "")
 
@@ -94,7 +102,7 @@ def main(languages: list):
             pa.Table.from_pylist(results),
             root_path=URL_DATASET_PREDICTED,
             partition_cols=["lang", "codable"],
-            basename_template="part-{i}.parquet",
+            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
             existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,
         )
@@ -111,8 +119,13 @@ if __name__ == "__main__":
         help="List of source languages you want to classify",
     )
 
+    parser.add_argument(
+        "--quarter",
+        type=int,
+        required=False,
+        help="Quarter of the dataset to process",
+    )
     # Parse the command-line arguments
     args = parser.parse_args()
-
     # Call the main function with parsed arguments
-    main(args.languages)
+    main(languages=args.languages, quarter=args.quarter)
