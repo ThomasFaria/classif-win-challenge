@@ -34,8 +34,7 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
-            python 4-classif-llm.py --languages un de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
-
+            python 4-classif-llm.py --languages bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm

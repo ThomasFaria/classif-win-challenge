@@ -1,5 +1,4 @@
-EMBEDDING_MODEL = "OrdalieTech/Solon-embeddings-large-0.1"
-COLLECTION_NAME = "test"
+EMBEDDING_MODEL = "dunzhang/stella_en_1.5B_v5"
 TRUNCATE_LABELS_DESCRIPTION = True
 SEARCH_ALGO = "similarity"
 MAX_CODE_RETRIEVED = 10
