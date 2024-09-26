@@ -1,20 +1,17 @@
 import argparse
-import os
 from datetime import datetime
 
 import pandas as pd
 import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
-from datasets import Dataset
 from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputParser
 from tqdm import tqdm
+from vllm import LLM
+from vllm.sampling_params import SamplingParams
 
 from src.constants.llm import (
-    BATCH_SIZE,
-    DO_SAMPLE,
     LLM_MODEL,
-    MAX_NEW_TOKEN,
     TEMPERATURE,
 )
 from src.constants.paths import (
@@ -23,8 +20,6 @@ from src.constants.paths import (
     URL_LABELS,
     URL_SUBMISSIONS,
 )
-from src.constants.utils import DEVICE
-from src.llm.build_llm import build_llm_model
 from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system
 
@@ -36,15 +31,10 @@ def main(max_retry: int):
     with fs.open(URL_LABELS) as f:
         labels = pd.read_csv(f, dtype=str)
 
-    generation_args = {
-        "max_new_tokens": MAX_NEW_TOKEN,
-        "do_sample": DO_SAMPLE,
-        "temperature": TEMPERATURE,
-    }
+    sampling_params = SamplingParams(max_tokens=8192, temperature=TEMPERATURE, top_p=0.95)
 
-    llm, tokenizer = build_llm_model(
-        model_name=LLM_MODEL,
-        hf_token=os.getenv("HF_TOKEN"),
+    llm = LLM(
+        model=LLM_MODEL, tokenizer_mode="mistral", config_format="mistral", load_format="mistral"
     )
 
     # Load the dataset
@@ -68,24 +58,10 @@ def main(max_retry: int):
 
     for it in range(1, max_retry + 1):
         print(f"Retrying classification for the {it} time")
-        dataset = Dataset.from_dict(data_uncoded)
+        batch_prompts = data_uncoded.loc[:, "prompt"].tolist()
 
-        responses = []
-        for i in tqdm(range(0, len(dataset), BATCH_SIZE)):
-            batch_prompts = dataset[i : i + BATCH_SIZE]["prompt"]
-            inputs = tokenizer(batch_prompts, padding=True, return_tensors="pt").to(DEVICE)
-
-            # Generate the output
-            outputs = llm.generate(
-                **inputs,
-                **generation_args,
-                pad_token_id=tokenizer.eos_token_id,  # Use the eos_token_id
-                eos_token_id=tokenizer.eos_token_id,
-            )
-            response = tokenizer.batch_decode(
-                outputs[:, inputs["input_ids"].shape[1] :], skip_special_tokens=True
-            )
-            responses.extend(response)
+        outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
+        responses = [outputs[i].outputs[0].text for i in range(len(outputs))]
 
         data_uncoded.loc[:, "raw_responses"] = responses
 

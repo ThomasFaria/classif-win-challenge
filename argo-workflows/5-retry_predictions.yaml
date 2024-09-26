@@ -34,6 +34,7 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
+            huggingface-cli login --token $HF_TOKEN &&
             python 5-retry-classif.py --max_retry 3
 
         volumeMounts:
