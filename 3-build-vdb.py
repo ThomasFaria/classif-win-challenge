@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import pandas as pd
 import pyarrow as pa
@@ -11,7 +10,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
 from tqdm import tqdm
 
-from src.constants.llm import LLM_MODEL, PROMPT_MAX_TOKEN
+from src.constants.llm import PROMPT_MAX_TOKEN
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
     URL_DATASET_PROMPTS,
@@ -26,7 +25,6 @@ from src.constants.vector_db import (
     SEARCH_ALGO,
     TRUNCATE_LABELS_DESCRIPTION,
 )
-from src.llm.build_llm import build_llm_model
 from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
 from src.utils.data import extract_info, get_file_system
@@ -42,10 +40,6 @@ def main(title_column: str, description_column: str, languages: list):
         model_kwargs={"device": DEVICE},
         encode_kwargs={"normalize_embeddings": True},
         show_progress=False,
-    )
-    _, tokenizer = build_llm_model(
-        model_name=LLM_MODEL,
-        hf_token=os.getenv("HF_TOKEN"),
     )
 
     with fs.open(URL_LABELS) as f:
@@ -113,7 +107,6 @@ def main(title_column: str, description_column: str, languages: list):
             prompt = create_prompt_with_docs(
                 row,
                 parser,
-                tokenizer,
                 retriever,
                 labels_en,
                 **{

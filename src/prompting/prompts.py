@@ -110,7 +110,7 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
     return prompt, num_documents_included
 
 
-def create_prompt_with_docs(row, parser, tokenizer, retriever, labels_en, **kwargs):
+def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
     title = getattr(row, kwargs.get("title_column"))
     lang = row.lang
@@ -133,14 +133,13 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, labels_en, **kwar
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
 
-    prompt, _ = generate_valid_prompt(
-        prompt_template,
-        kwargs.get("prompt_max_token"),
-        tokenizer,
-        title=title,
-        description=description,
-        retrieved_docs=retrieved_docs_en,
-        language=lang,
+    prompt = prompt_template.format(
+        **{
+            "title": title,
+            "description": description,
+            "language": lang,
+            "proposed_categories": format_docs(retrieved_docs_en),
+        }
     )
 
     return {"id": id, "prompt": prompt}
