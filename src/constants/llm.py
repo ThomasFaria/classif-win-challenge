@@ -1,4 +1,4 @@
-LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
+LLM_MODEL = "mistralai/Mistral-Small-Instruct-2409"
 MAX_NEW_TOKEN = 3000
 DO_SAMPLE = True
 TEMPERATURE = 0.2
