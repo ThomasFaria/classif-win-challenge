@@ -17,7 +17,8 @@ def build_llm_model(
     config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, token=hf_token)
 
     quantization_config = BitsAndBytesConfig(
-        load_in_8bit=True,
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype="float16",
     )
 
     # Load LLM tokenizer
@@ -39,6 +40,7 @@ def build_llm_model(
         device_map="auto",
         torch_dtype=torch.float16,
         quantization_config=quantization_config,
+        low_cpu_mem_usage=True,
     )
 
     return model, tokenizer
