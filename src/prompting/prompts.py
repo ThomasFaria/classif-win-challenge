@@ -1,3 +1,5 @@
+import pandas as pd
+
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_core.prompts import PromptTemplate
 
@@ -117,8 +119,12 @@ def create_prompt_with_docs(row, parser, tokenizer, retriever, labels_en, **kwar
     # Retrieve documents
     retrieved_docs = retriever.invoke(" ".join([title, description]))
 
-    retrieved_codes = set([doc.metadata["code"] for doc in retrieved_docs])
-    relevant_code_en = labels_en.loc[labels_en["code"].isin(retrieved_codes)]
+    retrieved_codes = [doc.metadata["code"] for doc in retrieved_docs]
+    relevant_code_en = labels_en[labels_en["code"].isin(retrieved_codes)].copy()
+    relevant_code_en["code"] = pd.Categorical(
+        relevant_code_en["code"], categories=retrieved_codes, ordered=True
+    )
+    relevant_code_en = relevant_code_en.sort_values("code")
     retrieved_docs_en = DataFrameLoader(relevant_code_en, page_content_column="description").load()
 
     # Generate the prompt and include the number of documents
