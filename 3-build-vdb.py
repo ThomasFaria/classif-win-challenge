@@ -15,9 +15,9 @@ from src.constants.llm import LLM_MODEL, PROMPT_MAX_TOKEN
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
     URL_DATASET_PROMPTS,
+    URL_DATASET_WITH_LANG,
     URL_LABELS,
     URL_LABELS_WITH_LANG_W,
-    URL_DATASET_WITH_LANG,
 )
 from src.constants.utils import DEVICE
 from src.constants.vector_db import (
@@ -29,7 +29,7 @@ from src.constants.vector_db import (
 from src.llm.build_llm import build_llm_model
 from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
-from src.utils.data import get_file_system, extract_info
+from src.utils.data import extract_info, get_file_system
 from src.vector_db.document_chunker import chunk_documents
 
 

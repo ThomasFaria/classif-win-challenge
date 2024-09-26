@@ -1,5 +1,6 @@
 import argparse
 import os
+from datetime import datetime
 
 import pandas as pd
 import pyarrow as pa
@@ -8,7 +9,6 @@ import pyarrow.parquet as pq
 from datasets import Dataset
 from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputParser
 from tqdm import tqdm
-from datetime import datetime
 
 from src.constants.llm import (
     BATCH_SIZE,
@@ -19,8 +19,8 @@ from src.constants.llm import (
 )
 from src.constants.paths import (
     URL_DATASET_PREDICTED,
-    URL_LABELS,
     URL_DATASET_PREDICTED_FINAL,
+    URL_LABELS,
     URL_SUBMISSIONS,
 )
 from src.constants.utils import DEVICE

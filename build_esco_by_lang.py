@@ -2,10 +2,9 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from src.constants.paths import URL_LABELS_WITH_LANG_R, URL_LABELS_WITH_LANG_W, URL_LABELS
-from src.utils.mapping import lang_mapping
+from src.constants.paths import URL_LABELS, URL_LABELS_WITH_LANG_R, URL_LABELS_WITH_LANG_W
 from src.utils.data import get_file_system
-
+from src.utils.mapping import lang_mapping
 
 fs = get_file_system()
 

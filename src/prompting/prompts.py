@@ -1,5 +1,6 @@
-from langchain_core.prompts import PromptTemplate
 from langchain_community.document_loaders import DataFrameLoader
+from langchain_core.prompts import PromptTemplate
+
 from src.utils.mapping import lang_mapping
 
 CLASSIF_PROMPT_TEMPLATE = """Your goal is to select the single most appropriate occupational category for the job based on the description, its title and a list of the most relevant occupational categories selected.
