@@ -1,9 +1,7 @@
-import torch
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
-    BitsAndBytesConfig,
 )
 
 
@@ -15,11 +13,6 @@ def build_llm_model(
     Create the llm model
     """
     config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, token=hf_token)
-
-    quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype="float16",
-    )
 
     # Load LLM tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
@@ -38,9 +31,6 @@ def build_llm_model(
         token=hf_token,
         config=config,
         device_map="auto",
-        torch_dtype=torch.float16,
-        quantization_config=quantization_config,
-        low_cpu_mem_usage=True,
     )
 
     return model, tokenizer
