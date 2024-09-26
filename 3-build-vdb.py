@@ -46,7 +46,6 @@ def main(title_column: str, description_column: str, languages: list):
     _, tokenizer = build_llm_model(
         model_name=LLM_MODEL,
         hf_token=os.getenv("HF_TOKEN"),
-        device=DEVICE,
     )
 
     with fs.open(URL_LABELS) as f:

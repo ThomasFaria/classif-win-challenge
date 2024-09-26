@@ -39,7 +39,6 @@ def main(languages: list, quarter: int = None):
     llm, tokenizer = build_llm_model(
         model_name=LLM_MODEL,
         hf_token=os.getenv("HF_TOKEN"),
-        device=DEVICE,
     )
     for lang in languages:
         print(f"Processing for language: {lang}")

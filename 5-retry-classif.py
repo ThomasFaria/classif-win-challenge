@@ -45,7 +45,6 @@ def main(max_retry: int):
     llm, tokenizer = build_llm_model(
         model_name=LLM_MODEL,
         hf_token=os.getenv("HF_TOKEN"),
-        device=DEVICE,
     )
 
     # Load the dataset

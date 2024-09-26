@@ -43,7 +43,6 @@ def main(title_column: str, description_column: str, list_country: list):
     llm, tokenizer = build_llm_model(
         model_name=LLM_MODEL,
         hf_token=os.getenv("HF_TOKEN"),
-        device=DEVICE,
     )
 
     country_map = lang_mapping.loc[lang_mapping["lang_iso_2"].isin(list_country)]
