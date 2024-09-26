@@ -8,6 +8,7 @@ from transformers import (
 def build_llm_model(
     model_name,
     hf_token=None,
+    device="cuda",
 ):
     """
     Create the llm model
@@ -31,6 +32,6 @@ def build_llm_model(
         token=hf_token,
         config=config,
         device_map="auto",
-    )
+    ).to(device)
 
     return model, tokenizer
