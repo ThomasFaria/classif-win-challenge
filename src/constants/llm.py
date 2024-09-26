@@ -1,4 +1,4 @@
-LLM_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 MAX_NEW_TOKEN = 3000
 DO_SAMPLE = True
 TEMPERATURE = 0.2

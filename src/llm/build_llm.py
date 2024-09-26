@@ -20,6 +20,7 @@ def build_llm_model(
         model_name,
         token=hf_token,
         use_fast=True,
+        padding_side="left",
     )
 
     # Check if tokenizer has a pad_token; if not, set it to eos_token
