@@ -1,4 +1,4 @@
-LLM_MODEL = "Qwen/Qwen2.5-14B-Instruct"
+LLM_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 MAX_NEW_TOKEN = 3000
 DO_SAMPLE = True
 TEMPERATURE = 0.2
