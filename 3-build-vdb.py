@@ -14,9 +14,8 @@ from src.constants.llm import PROMPT_MAX_TOKEN
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
     URL_DATASET_PROMPTS,
-    URL_DATASET_WITH_LANG,
+    URL_DATASET_TRANSLATED,
     URL_LABELS,
-    URL_LABELS_WITH_LANG_W,
 )
 from src.constants.utils import DEVICE
 from src.constants.vector_db import (
@@ -48,45 +47,25 @@ def main(title_column: str, description_column: str, languages: list):
     if TRUNCATE_LABELS_DESCRIPTION:
         labels_en.loc[:, "description"] = labels_en["description"].apply(lambda x: extract_info(x))
 
+    all_splits = chunk_documents(data=labels_en, hf_tokenizer_name=EMBEDDING_MODEL)
+
+    db = Chroma.from_documents(
+        collection_name="labels_embeddings",
+        documents=all_splits,
+        persist_directory=CHROMA_DB_LOCAL_DIRECTORY,
+        embedding=emb_model,
+        client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
+    )
+
+    retriever = db.as_retriever(search_type=SEARCH_ALGO, search_kwargs={"k": MAX_CODE_RETRIEVED})
+
     for lang in languages:
         print(f"Creating prompts for language: {lang}")
-
-        labels = (
-            ds.dataset(
-                URL_LABELS_WITH_LANG_W.replace("s3://", ""),
-                partitioning=["lang"],
-                format="parquet",
-                filesystem=fs,
-            )
-            .to_table()
-            .filter(
-                (ds.field("lang") == f"lang={lang if lang != "un" else "en"}")
-            )  # If un used english labels for vdb
-            .to_pandas()
-        )
-        if labels.empty:
-            print(f"No label found for language {lang}. Skipping...")
-            continue
-
-        labels.fillna("", inplace=True)
-        all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
-
-        db = Chroma.from_documents(
-            collection_name=f"lang-{lang}",
-            documents=all_splits,
-            persist_directory=CHROMA_DB_LOCAL_DIRECTORY,
-            embedding=emb_model,
-            client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
-        )
-
-        retriever = db.as_retriever(
-            search_type=SEARCH_ALGO, search_kwargs={"k": MAX_CODE_RETRIEVED}
-        )
 
         # Load the dataset
         data = (
             ds.dataset(
-                URL_DATASET_WITH_LANG.replace("s3://", ""),
+                URL_DATASET_TRANSLATED.replace("s3://", ""),
                 partitioning=["lang"],
                 format="parquet",
                 filesystem=fs,
