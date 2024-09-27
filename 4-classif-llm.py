@@ -17,11 +17,16 @@ from src.constants.llm import (
 from src.constants.paths import URL_DATASET_PREDICTED, URL_DATASET_PROMPTS, URL_LABELS
 from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system
+from src.llm.build_llm import cache_model_from_hf_hub
 
 
 def main(languages: list, quarter: int = None):
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
     fs = get_file_system()
+
+    cache_model_from_hf_hub(
+        LLM_MODEL,
+    )
 
     with fs.open(URL_LABELS) as f:
         labels = pd.read_csv(f, dtype=str)

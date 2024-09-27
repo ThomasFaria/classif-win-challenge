@@ -1,38 +1,81 @@
-from transformers import (
-    AutoConfig,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-)
+import os
+
+from src.utils.data import get_file_system
+
+from src.constants.llm import LLM_MODEL
+from vllm import LLM
+import subprocess
 
 
-def build_llm_model(
+def cache_model_from_hf_hub(
     model_name,
-    hf_token=None,
-    device="cuda",
+    s3_endpoint=f'https://{os.environ["AWS_S3_ENDPOINT"]}',
+    s3_bucket="projet-dedup-oja",
+    s3_cache_dir="models/hf_hub",
 ):
+    """Use S3 as proxy cache from HF hub if a model is not already cached locally.
+
+    Args:
+        model_name (str): Name of the model on the HF hub.
+        s3_bucket (str): Name of the S3 bucket to use.
+        s3_cache_dir (str): Path of the cache directory on S3.
     """
-    Create the llm model
-    """
-    config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, token=hf_token)
+    # Local cache config
+    LOCAL_HF_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub")
+    model_name_hf_cache = "models--" + "--".join(model_name.split("/"))
+    dir_model_local = os.path.join(LOCAL_HF_CACHE_DIR, model_name_hf_cache)
 
-    # Load LLM tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name,
-        token=hf_token,
-        use_fast=True,
-        padding_side="left",
-    )
+    # Remote cache config
+    fs = get_file_system()
+    available_models_s3 = [
+        os.path.basename(path) for path in fs.ls(os.path.join(s3_bucket, s3_cache_dir))
+    ]
+    dir_model_s3 = os.path.join(s3_bucket, s3_cache_dir, model_name_hf_cache)
 
-    # Check if tokenizer has a pad_token; if not, set it to eos_token
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    if model_name_hf_cache not in os.listdir(LOCAL_HF_CACHE_DIR):
+        # Try fetching from S3 if available
+        if model_name_hf_cache in available_models_s3:
+            print(f"Fetching model {model_name} from S3.")
+            cmd = [
+                "mc",
+                "cp",
+                "-r",
+                f"s3/{dir_model_s3}",
+                f"{LOCAL_HF_CACHE_DIR}",
+            ]
+            subprocess.run(cmd, check=True)
+        # Else, fetch from HF Hub and push to S3
+        else:
+            print(f"Model {model_name} not found on S3, fetching from HF hub.")
+            LLM(
+                model=LLM_MODEL,
+                tokenizer_mode="mistral",
+                config_format="mistral",
+                load_format="mistral",
+            )
+            print(f"Putting model {model_name} on S3.")
+            cmd = [
+                "mc",
+                "cp",
+                "-r",
+                f"{dir_model_local}",
+                f"s3/{dir_model_s3}",
+            ]
+            subprocess.run(cmd, check=True)
+    else:
+        print(f"Model {model_name} found in local cache. ")
+        if model_name_hf_cache not in available_models_s3:
+            # Push from local HF cache to S3
+            print(f"Putting model {model_name} on S3.")
+            cmd = [
+                "mc",
+                "cp",
+                "-r",
+                f"{dir_model_local}",
+                f"s3/{dir_model_s3}",
+            ]
+            subprocess.run(cmd, check=True)
 
-    # Load LLM
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        token=hf_token,
-        config=config,
-        device_map="auto",
-    ).to(device)
 
-    return model, tokenizer
+if __name__ == "__main__":
+    cache_model_from_hf_hub(LLM_MODEL)

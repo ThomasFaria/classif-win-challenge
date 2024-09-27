@@ -35,6 +35,7 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
+            export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
             python 4-classif-llm.py --languages bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
         volumeMounts:
           - mountPath: /dev/shm

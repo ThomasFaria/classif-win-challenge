@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: run-predictions-
+  generateName: run-translate-desc-
 spec:
   serviceAccountName: workflow
   volumes:
@@ -22,8 +22,8 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: predictions
-            template: run-predictions
+          - name: translate-desc
+            template: run-translate-desc
             arguments:
               parameters:
                 - name: QUARTER
@@ -32,7 +32,7 @@ spec:
             withParam: "{{workflow.parameters.params-conf-list}}"
 
     # Worker templat
-    - name: run-predictions
+    - name: run-translate-desc
       inputs:
           parameters:
             - name: QUARTER
@@ -51,6 +51,7 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
+            export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
             python 2-translate-descriptions.py --description_col description_truncated --title_col title_clean --languages en --quarter {{inputs.parameters.QUARTER}}
 
         volumeMounts:
