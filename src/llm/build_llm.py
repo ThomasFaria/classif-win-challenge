@@ -40,8 +40,8 @@ def cache_model_from_hf_hub(
                 "mc",
                 "cp",
                 "-r",
-                f"s3/{dir_model_s3}/",
-                f"{LOCAL_HF_CACHE_DIR}",
+                f"s3/{dir_model_s3}",
+                f"{LOCAL_HF_CACHE_DIR}/",
             ]
             subprocess.run(cmd, check=True)
         # Else, fetch from HF Hub and push to S3
