@@ -10,6 +10,13 @@ spec:
         medium: Memory
         sizeLimit: 64Gi
   entrypoint: main
+  arguments:
+    parameters:
+      - name: params-conf-list
+        value: '[
+            {"QUARTER": 1},
+            {"QUARTER": 2}
+            ]'
 
   templates:
     - name: main
@@ -17,9 +24,18 @@ spec:
         tasks:
           - name: predictions
             template: run-predictions
+            arguments:
+              parameters:
+                - name: QUARTER
+                  value: "{{item.QUARTER}}"
+            # Pass the inputs to the task using "withParam"
+            withParam: "{{workflow.parameters.params-conf-list}}"
 
     # Worker templat
     - name: run-predictions
+      inputs:
+          parameters:
+            - name: QUARTER
       nodeSelector:
         nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
       container:
@@ -35,7 +51,8 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
-            python 4-classif-llm.py --languages bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
+            python 2-translate-descriptions.py --description_col description_truncated --title_col title_clean --languages en --quarter {{inputs.parameters.QUARTER}}
+
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm

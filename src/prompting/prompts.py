@@ -20,17 +20,18 @@ Relevant Occupational Categories:
 {format_instructions}
 """
 
-TRANSLATION_PROMPT_TEMPLATE_DESC = """Please translate the following job description from {source_language} to English. The goal of this translation is to extract and accurately convey the core information of the job. It is preferred to shorten or summarize where possible while preserving the key information required for classification.
-
-Text for translation:
-{txt_to_translate}
+TRANSLATION_PROMPT = """You will be provided with a possibly noisy job offer text in {language}. Your task is to extract and translate into English only the relevant information about the job title and the job description. Do not translate the entire text, focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer. Additionally, ensure that the job title is translated exactly as it appears.
+Below are the job offer details:
+-	Job Ad Title (to translate exactly in english): {title}
+-	Job Ad Description (to extract and translate in enlish): {description}
 
 {format_instructions}
 """
 
-TRANSLATION_PROMPT_TEMPLATE_TITLE = """Please translate the following job title from {source_language} to English. Do not include any additional information or context, only the literal translation of the job title.
-Text for translation:
-{txt_to_translate}
+EXTRACTION_PROMPT = """You will be provided with a possibly noisy job offer. Your task is to extract only the relevant information about the job title and the job description. Focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer.
+Below are the job offer details:
+-	Job Ad Title: {title}
+-	Job Ad Description: {description}
 
 {format_instructions}
 """
@@ -145,18 +146,19 @@ def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     return {"id": id, "prompt": prompt}
 
 
-def create_translation_prompt(batch, col, parser, lang, **kwargs):
-    template = (
-        TRANSLATION_PROMPT_TEMPLATE_DESC
-        if batch[col] == kwargs.get("description_column")
-        else TRANSLATION_PROMPT_TEMPLATE_TITLE
-    )
+def create_translation_prompt(row, parser, **kwargs):
+    description = getattr(row, kwargs.get("description_column"))
+    title = getattr(row, kwargs.get("title_column"))
+    lang = lang_mapping.loc[lang_mapping["lang_iso_2"] == row.lang, "lang"].values[0]
+
+    template = EXTRACTION_PROMPT if lang == "English" else TRANSLATION_PROMPT
     return PromptTemplate.from_template(
         template=template,
         partial_variables={"format_instructions": parser.get_format_instructions()},
     ).format(
         **{
-            "source_language": lang,
-            "txt_to_translate": batch[col],
+            "title": title,
+            "description": description,
+            "language": lang,
         }
     )

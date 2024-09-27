@@ -1,52 +1,41 @@
 import argparse
-import os
 
 import pandas as pd
 import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
-from datasets import Dataset
 from langchain_core.output_parsers import PydanticOutputParser  # , StrOutputParser
 from tqdm import tqdm
 
 from src.constants.llm import (
-    DO_SAMPLE,
     LLM_MODEL,
     MAX_NEW_TOKEN,
     TEMPERATURE,
 )
 from src.constants.paths import URL_DATASET_TRANSLATED, URL_DATASET_WITH_LANG
-from src.constants.translation import BATCH_SIZE_TRANSLATION
-from src.constants.utils import DEVICE
-from src.llm.build_llm import build_llm_model
 from src.prompting.prompts import (
     create_translation_prompt,
 )
 from src.response.response_llm import TranslatorResponse, process_translation
 from src.utils.data import get_file_system
-from src.utils.mapping import lang_mapping
+from vllm import LLM
+from vllm.sampling_params import SamplingParams
 
 
-def main(title_column: str, description_column: str, list_country: list):
+def main(title_column: str, description_column: str, languages: list, quarter: int = None):
     """
     Translate the dataset from all languages to English
     """
     fs = get_file_system()
     parser = PydanticOutputParser(pydantic_object=TranslatorResponse)
 
-    generation_args = {
-        "max_new_tokens": MAX_NEW_TOKEN,
-        "do_sample": DO_SAMPLE,
-        "temperature": TEMPERATURE,
-    }
+    sampling_params = SamplingParams(max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.95)
 
-    llm, tokenizer = build_llm_model(
-        model_name=LLM_MODEL,
-        hf_token=os.getenv("HF_TOKEN"),
+    llm = LLM(
+        model=LLM_MODEL, tokenizer_mode="mistral", config_format="mistral", load_format="mistral"
     )
 
-    country_map = lang_mapping.loc[lang_mapping["lang_iso_2"].isin(list_country)]
-    for lang_iso_2, lang in zip(country_map.lang_iso_2, country_map.lang):
+    for lang in languages:
         data = (
             ds.dataset(
                 URL_DATASET_WITH_LANG.replace("s3://", ""),
@@ -55,7 +44,7 @@ def main(title_column: str, description_column: str, list_country: list):
                 filesystem=fs,
             )
             .to_table()
-            .filter((ds.field("lang") == f"lang={lang_iso_2}"))
+            .filter((ds.field("lang") == f"lang={lang}"))
             .to_pandas()
         )
 
@@ -63,74 +52,54 @@ def main(title_column: str, description_column: str, list_country: list):
             print(f"No data found for language {lang}. Skipping...")
             continue
 
+        if quarter is not None:
+            idx_for_subset = [
+                ((data.shape[0] // 4) * (quarter - 1)),
+                ((data.shape[0] // 4) * quarter),
+            ]
+            idx_for_subset[-1] = idx_for_subset[-1] if quarter != 4 else data.shape[0]
+            data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
+
         # Reformat partionnning column
         data.loc[:, "lang"] = data.loc[:, "lang"].str.replace("lang=", "")
 
-        if lang_iso_2 in ["en", "un"]:
-            # We do not perform translation when text is in english or undefined (bad detected score)
-            data.loc[:, f"{title_column}_en"] = data[title_column]
-            data.loc[:, f"{description_column}_en"] = data[description_column]
-        else:
-            print(f"Translating texts from {lang} to English")
+        print(f"Translating texts from {lang} to English")
 
-            dataset = Dataset.from_dict(data)
-
-            for col in [title_column, description_column]:
-                dataset = dataset.map(
-                    lambda batch: {
-                        f"prompt_{col}": create_translation_prompt(
-                            batch, col, parser, lang, description_column=description_column
-                        )
-                    },
-                    batched=False,
-                )
-                translations = []
-                for i in tqdm(range(0, len(dataset), BATCH_SIZE_TRANSLATION)):
-                    batch_prompts = dataset[i : i + BATCH_SIZE_TRANSLATION][f"prompt_{col}"]
-                    inputs = tokenizer(batch_prompts, padding=True, return_tensors="pt").to(DEVICE)
-
-                    # Generate the output
-                    outputs = llm.generate(
-                        **inputs,
-                        **generation_args,
-                        pad_token_id=tokenizer.eos_token_id,  # Use the eos_token_id
-                        eos_token_id=tokenizer.eos_token_id,
-                    )
-                    response = tokenizer.batch_decode(
-                        outputs[:, inputs["input_ids"].shape[1] :], skip_special_tokens=True
-                    )
-                    translations.extend(response)
-
-                data.loc[:, f"{col}_en"] = translations
-
-            results_title = []
-            results_desc = []
-            for row in data.itertuples():
-                result_title = process_translation(row, f"{title_column}_en", parser)
-                result_desc = process_translation(row, f"{description_column}_en", parser)
-                results_title.append(result_title)
-                results_desc.append(result_desc)
-
-            translation = (
-                pd.DataFrame(results_title)
-                .rename(columns={"translation": f"{title_column}_en"})
-                .merge(
-                    pd.DataFrame(results_desc).rename(
-                        columns={"translation": f"{description_column}_en"}
-                    ),
-                    on="id",
-                )
+        # Create the prompt
+        batch_prompts = [
+            create_translation_prompt(
+                row,
+                parser,
+                **{
+                    "description_column": description_column,
+                    "title_column": title_column,
+                },
             )
+            for row in data.itertuples()
+        ]
 
-            data.loc[:, [f"{title_column}_en", f"{description_column}_en"]] = translation.loc[
-                :, [f"{title_column}_en", f"{description_column}_en"]
-            ]
+        outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
+        translations = [outputs[i].outputs[0].text for i in range(len(outputs))]
+
+        data.loc[:, "raw_responses"] = translations
+
+        results = []
+        for row in tqdm(data.itertuples(), total=data.shape[0]):
+            result = process_translation(row, parser)
+            results.append(result)
+
+        data = data.merge(
+            pd.DataFrame(results).rename(
+                columns={"description": "description_en", "title": "title_en"}
+            ),
+            on="id",
+        )
 
         pq.write_to_dataset(
             pa.Table.from_pandas(data),
             root_path=URL_DATASET_TRANSLATED,
             partition_cols=["lang"],
-            basename_template="part-{i}.parquet",
+            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
             existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,
         )
@@ -156,11 +125,19 @@ if __name__ == "__main__":
         help="List of source languages you want to translate",
     )
 
+    parser.add_argument(
+        "--quarter",
+        type=int,
+        required=False,
+        help="Quarter of the dataset to process",
+    )
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # TITLE_COLUMN = "title_clean"
-    # DESCRIPTION_COLUMN = "description_truncated"
-
     # Call the main function with parsed arguments
-    main(args.title_col, args.description_col, args.languages)
+    main(
+        title_column=args.title_col,
+        description_column=args.description_col,
+        languages=args.languages,
+        quarter=args.quarter,
+    )

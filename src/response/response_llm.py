@@ -25,16 +25,11 @@ class LLMResponse(BaseModel):
 
 
 class TranslatorResponse(BaseModel):
-    """Represents a response model for translation assignment.
+    """Represents a response model for extraction and translation assignment."""
 
-    Attributes:
-        translated (bool): True if translated.
-        translation (Optional[str]): Translation
-    """
-
-    translated: bool = Field()
-
-    translation: Optional[str] = Field()
+    job_desc_extracted: bool = Field(description="True if the job description has been extracted.")
+    title: Optional[str] = Field(description="The job title in english.")
+    description: Optional[str] = Field(description="The job description in english.")
 
 
 def process_response(row: tuple, parser, labels) -> dict:
@@ -103,23 +98,24 @@ def process_response(row: tuple, parser, labels) -> dict:
     }
 
 
-def process_translation(row: tuple, translated_col: str, parser) -> dict:
-    col = getattr(row, translated_col)
+def process_translation(row: tuple, parser) -> dict:
+    response = row.raw_responses  # Extract the raw response data from the row.
     row_id = row.id  # Extract the row's unique identifier.
 
     try:
         # Attempt to parse the response using the provided parser.
-        validated_response = parser.parse(col)
-        # Ensure translation is a string, not a dict. Sometimes it returns a dict but it contains the translation
-        if isinstance(validated_response.translation, dict):
-            validated_response.translation = json.dumps(validated_response.translation)
+        validated_response = parser.parse(response)
+        # Ensure title is a string, not a dict. Sometimes it returns a dict but it contains the title
+        if isinstance(validated_response.title, dict):
+            validated_response.title = json.dumps(validated_response.title)
+        if isinstance(validated_response.description, dict):
+            validated_response.description = json.dumps(validated_response.description)
 
     except ValueError as parse_error:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
         validated_response = TranslatorResponse(
-            translated=False,
-            translation=None,  # TODO: fix itvalidated_response.translation
+            job_desc_extracted=False, title=None, description=None
         )
 
     # Return a dictionary containing the processed response details along with row metadata.

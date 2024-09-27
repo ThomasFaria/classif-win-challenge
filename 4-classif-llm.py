@@ -12,6 +12,7 @@ from vllm.sampling_params import SamplingParams
 from src.constants.llm import (
     LLM_MODEL,
     TEMPERATURE,
+    MAX_NEW_TOKEN,
 )
 from src.constants.paths import URL_DATASET_PREDICTED, URL_DATASET_PROMPTS, URL_LABELS
 from src.response.response_llm import LLMResponse, process_response
@@ -25,7 +26,7 @@ def main(languages: list, quarter: int = None):
     with fs.open(URL_LABELS) as f:
         labels = pd.read_csv(f, dtype=str)
 
-    sampling_params = SamplingParams(max_tokens=8192, temperature=TEMPERATURE, top_p=0.95)
+    sampling_params = SamplingParams(max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.95)
 
     llm = LLM(
         model=LLM_MODEL, tokenizer_mode="mistral", config_format="mistral", load_format="mistral"
