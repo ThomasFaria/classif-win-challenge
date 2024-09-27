@@ -114,7 +114,7 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
 def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
     title = getattr(row, kwargs.get("title_column"))
-    lang = row.lang
+    lang = lang_mapping.loc[lang_mapping["lang_iso_2"] == row.lang, "lang"].values[0]
     id = row.id
 
     # Retrieve documents
