@@ -40,7 +40,7 @@ def cache_model_from_hf_hub(
                 "mc",
                 "cp",
                 "-r",
-                f"s3/{dir_model_s3}",
+                f"s3/{dir_model_s3}/",
                 f"{LOCAL_HF_CACHE_DIR}",
             ]
             subprocess.run(cmd, check=True)
@@ -48,7 +48,7 @@ def cache_model_from_hf_hub(
         else:
             print(f"Model {model_name} not found on S3, fetching from HF hub.")
             LLM(
-                model=LLM_MODEL,
+                model=model_name,
                 tokenizer_mode="mistral",
                 config_format="mistral",
                 load_format="mistral",
@@ -58,7 +58,7 @@ def cache_model_from_hf_hub(
                 "mc",
                 "cp",
                 "-r",
-                f"{dir_model_local}",
+                f"{dir_model_local}/",
                 f"s3/{dir_model_s3}",
             ]
             subprocess.run(cmd, check=True)
@@ -71,7 +71,7 @@ def cache_model_from_hf_hub(
                 "mc",
                 "cp",
                 "-r",
-                f"{dir_model_local}",
+                f"{dir_model_local}/",
                 f"s3/{dir_model_s3}",
             ]
             subprocess.run(cmd, check=True)
