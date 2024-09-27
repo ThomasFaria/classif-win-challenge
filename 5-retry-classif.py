@@ -84,8 +84,6 @@ def main(max_retry: int):
     # Concatenate the newly coded data with the already predicted data + still uncoded data
     data_final = pd.concat([data[~data["id"].isin(newly_coded["id"].to_list())]] + [newly_coded])
 
-    assert data_final.shape[0] == 25665
-
     pq.write_to_dataset(
         pa.Table.from_pandas(data_final),
         root_path=URL_DATASET_PREDICTED_FINAL,
@@ -94,6 +92,8 @@ def main(max_retry: int):
         existing_data_behavior="overwrite_or_ignore",
         filesystem=fs,
     )
+
+    assert data_final.shape[0] == 25665
 
     with fs.open(
         f"{URL_SUBMISSIONS}/{datetime.now().strftime('%Y-%m-%d-%H-%M')}/classification.csv", "w"
