@@ -3,10 +3,11 @@ from langchain_community.document_loaders import DataFrameLoader
 
 from src.utils.mapping import lang_mapping
 
-CLASSIF_PROMPT_SYS = """Your are an expert in the International Standard Classification of Occupations (ISCO). Your goal is:
-1. Analyse the job title and the job description given by the user.
-2. Find the most appropriate code from the list of a relevant occupational categories given by the user.
-3. Return the code (4 digits) in a json format as explained by the user. If the job description can not be classified into the proposed categories, return None in the json.
+CLASSIF_PROMPT_SYS = """You are an expert in the International Standard Classification of Occupations (ISCO). Your goal is:
+
+1. Analyze the job title and job description provided by the user.
+2. From the list of occupational categories provided, identify the most appropriate ISCO code (4 digits) based on the job description.
+3. Return the 4-digit code in JSON format as specified by the user. If the job cannot be classified within the given categories, return `null` in the JSON.
 """
 
 CLASSIF_PROMPT = """
@@ -23,10 +24,10 @@ CLASSIF_PROMPT = """
 """
 
 TRANSLATION_PROMPT_SYS = """You are an excellent translator from {language} to English. You will be provided with a possibly noisy job offer text in {language} that you have to translate. Your task is:
-1. Extract only the relevant information about the job title and the job description. Focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer.
-2. Translate into English only the extracted informations from the description. You can summarise it, be but sure to add the key words of the job described.
-3. Translate into English the job title exactly as it appears.
-4. Reply in a json format as explained by the user.
+
+1. **Extract and translate the job title** from {language} to English. Ensure that the title is accurately translated and meaningful.
+2. **Extract and translate the job description** (which includes key responsibilities, tasks, and role details) from {language} to English. Summarize the description if necessary, but ensure that all relevant keywords and key information are included.
+3. **Return the translation in JSON format** as explained by the user.
 """
 
 TRANSLATION_PROMPT = """
@@ -39,10 +40,12 @@ TRANSLATION_PROMPT = """
 {format_instructions}
 """
 
-EXTRACTION_PROMPT_SYS = """You are a specialist in summarization. You will be provided with a possibly noisy job offer that you will have to extract the main informations. Your task is:
-1. Extract only the relevant information about the job title and the job description. Focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer.
-2. You can summarise it, be but sure to add the key words of the job described.
-3. Return the job title and the job description in a json format as explained by the user.
+EXTRACTION_PROMPT_SYS = """You are a specialist in summarization. You will be provided with a possibly noisy job offer, and your task is to extract the main information. Specifically:
+
+1. Extract and summarize the relevant information about the **job title** and **job description**. Focus on key responsibilities, tasks, and role details, as this information will be used to classify the job offer.
+2. Ensure the summary captures all key details and important keywords related to the job.
+3. Return both the job title and the summarized job description in a JSON format, as specified by the user.
+
 """
 
 EXTRACTION_PROMPT = """
