@@ -12,6 +12,7 @@ from vllm.sampling_params import SamplingParams
 
 from src.constants.llm import (
     LLM_MODEL,
+    MAX_NEW_TOKEN,
     TEMPERATURE,
 )
 from src.constants.paths import (
@@ -36,11 +37,10 @@ def main(max_retry: int):
     with fs.open(URL_LABELS) as f:
         labels = pd.read_csv(f, dtype=str)
 
-    sampling_params = SamplingParams(max_tokens=8192, temperature=TEMPERATURE, top_p=0.95)
-
-    llm = LLM(
-        model=LLM_MODEL, tokenizer_mode="mistral", config_format="mistral", load_format="mistral"
+    sampling_params = SamplingParams(
+        max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05
     )
+    llm = LLM(model=LLM_MODEL, max_model_len=20000, gpu_memory_utilization=0.95)
 
     # Load the dataset
     data = (

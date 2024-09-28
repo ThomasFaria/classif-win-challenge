@@ -40,9 +40,7 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
     )
 
     tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
-    llm = LLM(
-        model=LLM_MODEL,
-    )
+    llm = LLM(model=LLM_MODEL, max_model_len=20000, gpu_memory_utilization=0.95)
 
     for lang in languages:
         data = (

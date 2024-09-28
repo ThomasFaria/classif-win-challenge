@@ -35,9 +35,7 @@ def main(languages: list, quarter: int = None):
         max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05
     )
 
-    llm = LLM(
-        model=LLM_MODEL,
-    )
+    llm = LLM(model=LLM_MODEL, max_model_len=20000, gpu_memory_utilization=0.95)
 
     for lang in languages:
         print(f"Processing for language: {lang}")
