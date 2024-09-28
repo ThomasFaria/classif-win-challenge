@@ -1,5 +1,4 @@
 import pandas as pd
-
 from langchain_community.document_loaders import DataFrameLoader
 
 from src.utils.mapping import lang_mapping

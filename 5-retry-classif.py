@@ -20,9 +20,9 @@ from src.constants.paths import (
     URL_LABELS,
     URL_SUBMISSIONS,
 )
+from src.llm.build_llm import cache_model_from_hf_hub
 from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system
-from src.llm.build_llm import cache_model_from_hf_hub
 
 
 def main(max_retry: int):

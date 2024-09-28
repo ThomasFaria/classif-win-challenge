@@ -8,6 +8,7 @@ from chromadb.config import Settings
 from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
+from transformers import AutoTokenizer
 
 from src.constants.llm import LLM_MODEL
 from src.constants.paths import (
@@ -27,7 +28,6 @@ from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
 from src.utils.data import extract_info, get_file_system
 from src.vector_db.document_chunker import chunk_documents
-from transformers import AutoTokenizer
 
 
 def main(title_column: str, description_column: str, languages: list):

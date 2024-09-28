@@ -1,10 +1,10 @@
 import os
+import subprocess
 
-from src.utils.data import get_file_system
+from transformers import AutoModelForCausalLM
 
 from src.constants.llm import LLM_MODEL
-import subprocess
-from transformers import AutoModelForCausalLM
+from src.utils.data import get_file_system
 
 
 def cache_model_from_hf_hub(

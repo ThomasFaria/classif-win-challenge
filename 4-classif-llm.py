@@ -11,13 +11,13 @@ from vllm.sampling_params import SamplingParams
 
 from src.constants.llm import (
     LLM_MODEL,
-    TEMPERATURE,
     MAX_NEW_TOKEN,
+    TEMPERATURE,
 )
 from src.constants.paths import URL_DATASET_PREDICTED, URL_DATASET_PROMPTS, URL_LABELS
+from src.llm.build_llm import cache_model_from_hf_hub
 from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system
-from src.llm.build_llm import cache_model_from_hf_hub
 
 
 def main(languages: list, quarter: int = None):
@@ -31,7 +31,9 @@ def main(languages: list, quarter: int = None):
     with fs.open(URL_LABELS) as f:
         labels = pd.read_csv(f, dtype=str)
 
-    sampling_params = SamplingParams(max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05)
+    sampling_params = SamplingParams(
+        max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05
+    )
 
     llm = LLM(
         model=LLM_MODEL,
