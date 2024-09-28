@@ -8,9 +8,8 @@ from chromadb.config import Settings
 from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
-from tqdm import tqdm
 
-from src.constants.llm import PROMPT_MAX_TOKEN
+from src.constants.llm import LLM_MODEL
 from src.constants.paths import (
     CHROMA_DB_LOCAL_DIRECTORY,
     URL_DATASET_PROMPTS,
@@ -28,11 +27,14 @@ from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
 from src.utils.data import extract_info, get_file_system
 from src.vector_db.document_chunker import chunk_documents
+from transformers import AutoTokenizer
 
 
 def main(title_column: str, description_column: str, languages: list):
     fs = get_file_system()
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
+
+    tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
 
     emb_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
@@ -81,9 +83,8 @@ def main(title_column: str, description_column: str, languages: list):
 
         data["lang"] = data["lang"].str.replace("lang=", "")
 
-        prompts = []
-        for row in tqdm(data.itertuples(), total=data.shape[0]):
-            prompt = create_prompt_with_docs(
+        prompts = [
+            create_prompt_with_docs(
                 row,
                 parser,
                 retriever,
@@ -91,15 +92,20 @@ def main(title_column: str, description_column: str, languages: list):
                 **{
                     "description_column": description_column,
                     "title_column": title_column,
-                    "prompt_max_token": PROMPT_MAX_TOKEN,
                 },
             )
-            prompts.append(prompt)
+            for row in data.itertuples()
+        ]
+
+        batch_prompts = tokenizer.apply_chat_template(
+            prompts, tokenize=False, add_generation_prompt=True
+        )
 
         # Merge results back to the original dataset
-        predictions = data.merge(pd.DataFrame(prompts), on="id")
+        data.loc[:, "prompt"] = batch_prompts
+
         pq.write_to_dataset(
-            pa.Table.from_pandas(predictions),
+            pa.Table.from_pandas(data),
             root_path=URL_DATASET_PROMPTS,
             partition_cols=["lang"],
             basename_template="part-{i}.parquet",
@@ -109,7 +115,7 @@ def main(title_column: str, description_column: str, languages: list):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Translation function")
+    parser = argparse.ArgumentParser(description="Prompting function")
 
     # Add arguments for title, description, and languages
     parser.add_argument(

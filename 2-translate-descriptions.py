@@ -21,6 +21,7 @@ from src.utils.data import get_file_system
 from vllm import LLM
 from vllm.sampling_params import SamplingParams
 from src.llm.build_llm import cache_model_from_hf_hub
+from transformers import AutoTokenizer
 
 
 def main(title_column: str, description_column: str, languages: list, quarter: int = None):
@@ -34,8 +35,11 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         LLM_MODEL,
     )
 
-    sampling_params = SamplingParams(max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05)
+    sampling_params = SamplingParams(
+        max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05
+    )
 
+    tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
     llm = LLM(
         model=LLM_MODEL,
     )
@@ -70,8 +74,8 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
 
         print(f"Translating texts from {lang} to English")
 
-        # Create the prompt
-        batch_prompts = [
+        # Create the prompts
+        prompts = [
             create_translation_prompt(
                 row,
                 parser,
@@ -83,6 +87,9 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
             for row in data.itertuples()
         ]
 
+        batch_prompts = tokenizer.apply_chat_template(
+            prompts, tokenize=False, add_generation_prompt=True
+        )
         outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
         translations = [outputs[i].outputs[0].text for i in range(len(outputs))]
 

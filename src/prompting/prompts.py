@@ -1,37 +1,57 @@
 import pandas as pd
 
 from langchain_community.document_loaders import DataFrameLoader
-from langchain_core.prompts import PromptTemplate
 
 from src.utils.mapping import lang_mapping
 
-CLASSIF_PROMPT_TEMPLATE = """Your goal is to select the single most appropriate occupational category for the job based on the description, its title and a list of the most relevant occupational categories selected.
-The job title and description are in their original language : {language}.
+CLASSIF_PROMPT_SYS = """Your are an expert in the International Standard Classification of Occupations (ISCO). Your goal is:
+1. Analyse the job title and the job description given by the user.
+2. Find the most appropriate code from the list of a relevant occupational categories given by the user.
+3. Return the code (4 digits) in a json format as explained by the user. If the job description can not be classified into the proposed categories, return None in the json.
+"""
 
-Job Ad Title:
+CLASSIF_PROMPT = """
+- Job Ad Title:
 {title}
 
-Job Ad Description:
+- Job Ad Description:
 {description}
 
-Relevant Occupational Categories:
+- Relevant Occupational Categories:
 {proposed_categories}
 
 {format_instructions}
 """
 
-TRANSLATION_PROMPT = """You will be provided with a possibly noisy job offer text in {language}. Your task is to extract and translate into English only the relevant information about the job title and the job description. Do not translate the entire text, focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer. Additionally, ensure that the job title is translated exactly as it appears.
-Below are the job offer details:
--	Job Ad Title (to translate exactly in english): {title}
--	Job Ad Description (to extract and translate in enlish): {description}
+TRANSLATION_PROMPT_SYS = """You are an excellent translator from {language} to English. You will be provided with a possibly noisy job offer text in {language} that you have to translate. Your task is:
+1. Extract only the relevant information about the job title and the job description. Focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer.
+2. Translate into English only the extracted informations from the description. You can summarise it, be but sure to add the key words of the job described.
+3. Translate into English the job title exactly as it appears.
+4. Reply in a json format as explained by the user.
+"""
+
+TRANSLATION_PROMPT = """
+- Job Ad Title (to translate exactly in english):
+{title}
+
+- Job Ad Description (to extract and translate in enlish):
+{description}
 
 {format_instructions}
 """
 
-EXTRACTION_PROMPT = """You will be provided with a possibly noisy job offer. Your task is to extract only the relevant information about the job title and the job description. Focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer.
-Below are the job offer details:
--	Job Ad Title: {title}
--	Job Ad Description: {description}
+EXTRACTION_PROMPT_SYS = """You are a specialist in summarization. You will be provided with a possibly noisy job offer that you will have to extract the main informations. Your task is:
+1. Extract only the relevant information about the job title and the job description. Focus solely on the content related to the job description, which includes the key responsibilities, tasks, and role details, so that the information can later be used to classify the job offer.
+2. You can summarise it, be but sure to add the key words of the job described.
+3. Return the job title and the job description in a json format as explained by the user.
+"""
+
+EXTRACTION_PROMPT = """
+- Job Ad Title:
+{title}
+
+- Job Ad Description:
+{description}
 
 {format_instructions}
 """
@@ -113,11 +133,9 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
 
 def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
-    description = description if description is not None else getattr(row, "description")
+    description = description if description is not None else getattr(row, "description_clean")
     title = getattr(row, kwargs.get("title_column"))
     title = title if title is not None else getattr(row, "title_clean")
-    lang = lang_mapping.loc[lang_mapping["lang_iso_2"] == row.lang, "lang"].values[0]
-    id = row.id
 
     # Retrieve documents
     retrieved_docs = retriever.invoke(" ".join([title, description]))
@@ -130,22 +148,16 @@ def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     relevant_code_en = relevant_code_en.sort_values("code")
     retrieved_docs_en = DataFrameLoader(relevant_code_en, page_content_column="description").load()
 
-    # Generate the prompt and include the number of documents
-    prompt_template = PromptTemplate.from_template(
-        template=CLASSIF_PROMPT_TEMPLATE,
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-    )
-
-    prompt = prompt_template.format(
+    prompt = CLASSIF_PROMPT.format(
         **{
             "title": title,
             "description": description,
-            "language": lang,
-            "proposed_categories": format_docs(retrieved_docs_en),
+            "proposed_categories": retrieved_docs_en,
+            "format_instructions": parser.get_format_instructions(),
         }
     )
 
-    return {"id": id, "prompt": prompt}
+    return [{"role": "system", "content": CLASSIF_PROMPT_SYS}, {"role": "user", "content": prompt}]
 
 
 def create_translation_prompt(row, parser, **kwargs):
@@ -154,13 +166,17 @@ def create_translation_prompt(row, parser, **kwargs):
     lang = lang_mapping.loc[lang_mapping["lang_iso_2"] == row.lang, "lang"].values[0]
 
     template = EXTRACTION_PROMPT if lang == "English" else TRANSLATION_PROMPT
-    return PromptTemplate.from_template(
-        template=template,
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-    ).format(
+    template_sys = EXTRACTION_PROMPT_SYS if lang == "English" else TRANSLATION_PROMPT_SYS
+
+    prompt = template.format(
         **{
             "title": title,
             "description": description,
-            "language": lang,
+            "format_instructions": parser.get_format_instructions(),
         }
     )
+
+    return [
+        {"role": "system", "content": template_sys.format(language=lang)},
+        {"role": "user", "content": prompt},
+    ]
