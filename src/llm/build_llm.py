@@ -9,7 +9,6 @@ from src.utils.data import get_file_system
 
 def cache_model_from_hf_hub(
     model_name,
-    s3_endpoint=f'https://{os.environ["AWS_S3_ENDPOINT"]}',
     s3_bucket="projet-dedup-oja",
     s3_cache_dir="models/hf_hub",
 ):
