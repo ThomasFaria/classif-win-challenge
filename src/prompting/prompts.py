@@ -154,7 +154,7 @@ def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
         **{
             "title": title,
             "description": description,
-            "proposed_categories": retrieved_docs_en,
+            "proposed_categories": format_docs(retrieved_docs_en),
             "format_instructions": parser.get_format_instructions(),
         }
     )
