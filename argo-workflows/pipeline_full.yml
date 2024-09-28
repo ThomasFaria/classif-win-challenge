@@ -54,7 +54,7 @@ spec:
 
         # Task 3
           - name: run-prompts
-            dependencies: [ run-translate-desc-en, run-translate-desc-en ]
+            dependencies: [ run-translate-desc-en, run-translate-desc ]
             template: run-prompts
 
 
