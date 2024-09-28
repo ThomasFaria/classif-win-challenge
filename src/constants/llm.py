@@ -1,4 +1,4 @@
-LLM_MODEL = "mistralai/Mistral-Small-Instruct-2409"
+LLM_MODEL = "Qwen/Qwen2.5-32B-Instruct"
 MAX_NEW_TOKEN = 8192
 DO_SAMPLE = True
 TEMPERATURE = 0.2

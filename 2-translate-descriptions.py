@@ -34,10 +34,10 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         LLM_MODEL,
     )
 
-    sampling_params = SamplingParams(max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.95)
+    sampling_params = SamplingParams(max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05)
 
     llm = LLM(
-        model=LLM_MODEL, tokenizer_mode="mistral", config_format="mistral", load_format="mistral"
+        model=LLM_MODEL,
     )
 
     for lang in languages:
