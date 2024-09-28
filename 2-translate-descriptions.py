@@ -91,7 +91,7 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
         translations = [outputs[i].outputs[0].text for i in range(len(outputs))]
 
-        data.loc[:, "raw_responses"] = translations
+        data.loc[:, "raw_translations"] = translations
 
         results = []
         for row in tqdm(data.itertuples(), total=data.shape[0]):

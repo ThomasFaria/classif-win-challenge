@@ -26,15 +26,15 @@ CLASSIF_PROMPT = """
 TRANSLATION_PROMPT_SYS = """You are an excellent translator from {language} to English. You will be provided with a possibly noisy job offer text in {language} that you have to translate. Your task is:
 
 1. **Extract and translate the job title** from {language} to English. Ensure that the title is accurately translated and meaningful.
-2. **Extract and translate the job description** (which includes key responsibilities, tasks, and role details) from {language} to English. Summarize the description if necessary, but ensure that all relevant keywords and key information are included.
+2. **Extract and translate the job description** (which includes key responsibilities, tasks, and role details) from {language} to English. Summarize the description if necessary, but ensure that all relevant keywords and key information are included. Usually three or four sentences are enough.
 3. **Return the translation in JSON format** as explained by the user.
 """
 
 TRANSLATION_PROMPT = """
-- Job Ad Title (to translate exactly in english):
+- Translate the following Job Ad Title in english:
 {title}
 
-- Job Ad Description (to extract and translate in enlish):
+- Translate the following Job Ad Description in english:
 {description}
 
 {format_instructions}

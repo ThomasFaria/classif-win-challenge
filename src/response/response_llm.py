@@ -30,6 +30,7 @@ class TranslatorResponse(BaseModel):
     job_desc_extracted: bool = Field(description="True if the job description has been extracted.")
     title: Optional[str] = Field(description="The job title in english.")
     description: Optional[str] = Field(description="The job description in english.")
+    keywords: Optional[list[str]] = Field(description="A list of important terms or phrases relevant to the job, such as skills, responsibilities, fields, or qualifications.")
 
 
 def process_response(row: tuple, parser, labels) -> dict:
@@ -99,7 +100,7 @@ def process_response(row: tuple, parser, labels) -> dict:
 
 
 def process_translation(row: tuple, parser) -> dict:
-    response = row.raw_responses  # Extract the raw response data from the row.
+    response = row.raw_translations  # Extract the raw response data from the row.
     row_id = row.id  # Extract the row's unique identifier.
 
     try:
@@ -115,7 +116,7 @@ def process_translation(row: tuple, parser) -> dict:
         # Log an error and return an un-codable response if parsing fails.
         print(f"Error processing row with id {row_id}: {parse_error}")
         validated_response = TranslatorResponse(
-            job_desc_extracted=False, title=None, description=None
+            job_desc_extracted=False, title=None, description=None, keywords=None
         )
 
     # Return a dictionary containing the processed response details along with row metadata.
