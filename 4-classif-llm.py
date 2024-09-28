@@ -44,7 +44,7 @@ def main(languages: list, quarter: int = None):
         data = (
             ds.dataset(
                 URL_DATASET_PROMPTS.replace("s3://", ""),
-                partitioning=["lang"],
+                partitioning=["lang", "job_desc_extracted"],
                 format="parquet",
                 filesystem=fs,
             )
@@ -67,6 +67,7 @@ def main(languages: list, quarter: int = None):
 
         # Reformat partionnning column
         data["lang"] = data["lang"].str.replace("lang=", "")
+        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace("job_desc_extracted=", "")
 
         batch_prompts = data.loc[:, "prompt"].tolist()
 

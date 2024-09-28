@@ -135,12 +135,11 @@ def generate_valid_prompt(prompt_template, max_tokens: int, tokenizer, **kwargs)
 
 def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
-    description = description if description is not None else getattr(row, "description_clean")
     title = getattr(row, kwargs.get("title_column"))
-    title = title if title is not None else getattr(row, "title_clean")
+    query = " ".join(filter(None, [title, description])) if title or description else "undefined"
 
     # Retrieve documents
-    retrieved_docs = retriever.invoke(" ".join([title, description]))
+    retrieved_docs = retriever.invoke(query)
 
     retrieved_codes = [doc.metadata["code"] for doc in retrieved_docs]
     relevant_code_en = labels_en[labels_en["code"].isin(retrieved_codes)].copy()

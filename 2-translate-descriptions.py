@@ -108,7 +108,7 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         pq.write_to_dataset(
             pa.Table.from_pandas(data),
             root_path=URL_DATASET_TRANSLATED,
-            partition_cols=["lang"],
+            partition_cols=["lang", "job_desc_extracted"],
             basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
             existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,

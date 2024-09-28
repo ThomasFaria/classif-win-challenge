@@ -68,7 +68,7 @@ def main(title_column: str, description_column: str, languages: list):
         data = (
             ds.dataset(
                 URL_DATASET_TRANSLATED.replace("s3://", ""),
-                partitioning=["lang"],
+                partitioning=["lang", "job_desc_extracted"],
                 format="parquet",
                 filesystem=fs,
             )
@@ -82,6 +82,7 @@ def main(title_column: str, description_column: str, languages: list):
             continue
 
         data["lang"] = data["lang"].str.replace("lang=", "")
+        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace("job_desc_extracted=", "")
 
         prompts = [
             create_prompt_with_docs(
@@ -107,7 +108,7 @@ def main(title_column: str, description_column: str, languages: list):
         pq.write_to_dataset(
             pa.Table.from_pandas(data),
             root_path=URL_DATASET_PROMPTS,
-            partition_cols=["lang"],
+            partition_cols=["lang", "job_desc_extracted"],
             basename_template="part-{i}.parquet",
             existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,
