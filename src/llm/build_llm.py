@@ -3,8 +3,8 @@ import os
 from src.utils.data import get_file_system
 
 from src.constants.llm import LLM_MODEL
-from vllm import LLM
 import subprocess
+from transformers import AutoModelForCausalLM
 
 
 def cache_model_from_hf_hub(
@@ -47,11 +47,9 @@ def cache_model_from_hf_hub(
         # Else, fetch from HF Hub and push to S3
         else:
             print(f"Model {model_name} not found on S3, fetching from HF hub.")
-            LLM(
-                model=model_name,
-                tokenizer_mode="mistral",
-                config_format="mistral",
-                load_format="mistral",
+            AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype="auto",
             )
             print(f"Putting model {model_name} on S3.")
             cmd = [
