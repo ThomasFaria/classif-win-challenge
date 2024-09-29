@@ -82,7 +82,9 @@ def main(title_column: str, description_column: str, languages: list):
             continue
 
         data["lang"] = data["lang"].str.replace("lang=", "")
-        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace("job_desc_extracted=", "")
+        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace(
+            "job_desc_extracted=", ""
+        )
 
         prompts = [
             create_prompt_with_docs(

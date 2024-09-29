@@ -17,12 +17,14 @@ def get_file_system() -> s3fs.S3FileSystem:
     )
 
 
-def extract_info(input_str):
+def extract_info(input_str, only_description=False):
     # Split the string by newlines
     lines = [line.strip() for line in input_str.split("\n")]
 
     # Store the first element of the list (the description)
     result = [lines[0].strip()]
+    if only_description:
+        return "\n".join(result)
 
     # Find the index of the examples
     try:

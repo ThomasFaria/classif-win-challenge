@@ -69,7 +69,7 @@ def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
     title = getattr(row, kwargs.get("title_column"))
     keywords = ", ".join(row.keywords.tolist()) if row.keywords is not None else None
-    
+
     query = (
         "\n".join(filter(None, [title, keywords, description]))
         if title or description
