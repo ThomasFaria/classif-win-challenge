@@ -80,7 +80,9 @@ def main(max_retry: int):
         results_df["codable"] = results_df["codable"].astype(str).str.lower()
 
         newly_coded = pd.concat([newly_coded] + [results_df[results_df["codable"] == "true"]])
-        data_uncoded = results_df[results_df["codable"] == "false"]
+        data_uncoded = results_df[results_df["codable"] == "false"].merge(
+            data.loc[:, ["id", "prompt"]], on="id"
+        )
 
     # Concatenate the newly coded data with the already predicted data + still uncoded data
     data_final = pd.concat([data[~data["id"].isin(newly_coded["id"].to_list())]] + [newly_coded])
