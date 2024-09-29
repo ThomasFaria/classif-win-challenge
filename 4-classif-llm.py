@@ -67,7 +67,9 @@ def main(languages: list, quarter: int = None):
 
         # Reformat partionnning column
         data["lang"] = data["lang"].str.replace("lang=", "")
-        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace("job_desc_extracted=", "")
+        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace(
+            "job_desc_extracted=", ""
+        )
 
         batch_prompts = data.loc[:, "prompt"].tolist()
 
@@ -81,10 +83,15 @@ def main(languages: list, quarter: int = None):
             result = process_response(row, parser, labels)
             results.append(result)
 
+        data = data.merge(
+            pd.DataFrame(results),
+            on="id",
+        )
+
         pq.write_to_dataset(
-            pa.Table.from_pylist(results),
+            pa.Table.from_pandas(data),
             root_path=URL_DATASET_PREDICTED,
-            partition_cols=["lang", "codable"],
+            partition_cols=["lang", "job_desc_extracted", "codable"],
             basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
             existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,

@@ -46,7 +46,7 @@ def main(max_retry: int):
     data = (
         ds.dataset(
             URL_DATASET_PREDICTED.replace("s3://", ""),
-            partitioning=["lang", "codable"],
+            partitioning=["lang", "job_desc_extracted", "codable"],
             format="parquet",
             filesystem=fs,
         )
@@ -56,6 +56,7 @@ def main(max_retry: int):
 
     # Reformat partionnning column
     data["lang"] = data["lang"].str.replace("lang=", "")
+    data["job_desc_extracted"] = data["job_desc_extracted"].str.replace("job_desc_extracted=", "")
     data["codable"] = data["codable"].str.replace("codable=", "")
 
     data_uncoded = data[data["codable"] == "false"].copy()
@@ -87,7 +88,7 @@ def main(max_retry: int):
     pq.write_to_dataset(
         pa.Table.from_pandas(data_final),
         root_path=URL_DATASET_PREDICTED_FINAL,
-        partition_cols=["lang", "codable"],
+        partition_cols=["lang", "job_desc_extracted, " "codable"],
         basename_template="part-{i}.parquet",
         existing_data_behavior="overwrite_or_ignore",
         filesystem=fs,
