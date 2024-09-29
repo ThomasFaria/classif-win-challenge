@@ -60,10 +60,10 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
 
     if quarter is not None:
         idx_for_subset = [
-            ((data.shape[0] // 4) * (quarter - 1)),
-            ((data.shape[0] // 4) * quarter),
+            ((data.shape[0] // 3) * (quarter - 1)),
+            ((data.shape[0] // 3) * quarter),
         ]
-        idx_for_subset[-1] = idx_for_subset[-1] if quarter != 4 else data.shape[0]
+        idx_for_subset[-1] = idx_for_subset[-1] if quarter != 3 else data.shape[0]
         data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
 
     # Reformat partionnning column

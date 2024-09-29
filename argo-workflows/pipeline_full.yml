@@ -16,15 +16,13 @@ spec:
         value: '[
             {"QUARTER": 1},
             {"QUARTER": 2},
-            {"QUARTER": 3},
-            {"QUARTER": 4}
+            {"QUARTER": 3}
             ]'
       - name: params-conf-list-predictions
         value: '[
             {"QUARTER": 1},
             {"QUARTER": 2},
-            {"QUARTER": 3},
-            {"QUARTER": 4}
+            {"QUARTER": 3}
             ]'
 
   templates:
