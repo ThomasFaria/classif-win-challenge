@@ -37,65 +37,60 @@ def main(languages: list, quarter: int = None):
 
     llm = LLM(model=LLM_MODEL, max_model_len=20000, gpu_memory_utilization=0.95)
 
-    for lang in languages:
-        print(f"Processing for language: {lang}")
-
-        # Load the dataset
-        data = (
-            ds.dataset(
-                URL_DATASET_PROMPTS.replace("s3://", ""),
-                partitioning=["lang", "job_desc_extracted"],
-                format="parquet",
-                filesystem=fs,
-            )
-            .to_table()
-            .filter((ds.field("lang") == f"lang={lang}"))
-            .to_pandas()
-        )
-
-        if data.empty:
-            print(f"No data found for language {lang}. Skipping...")
-            continue
-
-        if quarter is not None:
-            idx_for_subset = [
-                ((data.shape[0] // 4) * (quarter - 1)),
-                ((data.shape[0] // 4) * quarter),
-            ]
-            idx_for_subset[-1] = idx_for_subset[-1] if quarter != 4 else data.shape[0]
-            data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
-
-        # Reformat partionnning column
-        data["lang"] = data["lang"].str.replace("lang=", "")
-        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace(
-            "job_desc_extracted=", ""
-        )
-
-        batch_prompts = data.loc[:, "prompt"].tolist()
-
-        outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
-        responses = [outputs[i].outputs[0].text for i in range(len(outputs))]
-
-        data.loc[:, "raw_responses"] = responses
-
-        results = []
-        for row in tqdm(data.itertuples(), total=data.shape[0]):
-            result = process_response(row, parser, labels)
-            results.append(result)
-
-        data = data.merge(
-            pd.DataFrame(results),
-            on="id",
-        )
-
-        pq.write_to_dataset(
-            pa.Table.from_pandas(data),
-            root_path=URL_DATASET_PREDICTED,
-            partition_cols=["lang", "job_desc_extracted", "codable"],
-            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
-            existing_data_behavior="overwrite_or_ignore",
+    # Load the dataset
+    data = (
+        ds.dataset(
+            URL_DATASET_PROMPTS.replace("s3://", ""),
+            partitioning=["lang", "job_desc_extracted"],
+            format="parquet",
             filesystem=fs,
         )
+        .to_table()
+        .filter(ds.field("lang").isin([f"lang={lang}" for lang in languages]))
+        .to_pandas()
+    )
+
+    if data.empty:
+        print(f"No data found for languages {", ".join(languages)}. Skipping...")
+        return None
+
+    if quarter is not None:
+        idx_for_subset = [
+            ((data.shape[0] // 4) * (quarter - 1)),
+            ((data.shape[0] // 4) * quarter),
+        ]
+        idx_for_subset[-1] = idx_for_subset[-1] if quarter != 4 else data.shape[0]
+        data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
+
+    # Reformat partionnning column
+    data["lang"] = data["lang"].str.replace("lang=", "")
+    data["job_desc_extracted"] = data["job_desc_extracted"].str.replace("job_desc_extracted=", "")
+
+    batch_prompts = data.loc[:, "prompt"].tolist()
+
+    outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
+    responses = [outputs[i].outputs[0].text for i in range(len(outputs))]
+
+    data.loc[:, "raw_responses"] = responses
+
+    results = []
+    for row in tqdm(data.itertuples(), total=data.shape[0]):
+        result = process_response(row, parser, labels)
+        results.append(result)
+
+    data = data.merge(
+        pd.DataFrame(results),
+        on="id",
+    )
+
+    pq.write_to_dataset(
+        pa.Table.from_pandas(data),
+        root_path=URL_DATASET_PREDICTED,
+        partition_cols=["lang", "job_desc_extracted", "codable"],
+        basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
+        existing_data_behavior="overwrite_or_ignore",
+        filesystem=fs,
+    )
 
 
 if __name__ == "__main__":
