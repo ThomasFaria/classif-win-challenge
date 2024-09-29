@@ -30,7 +30,9 @@ class TranslatorResponse(BaseModel):
     job_desc_extracted: bool = Field(description="True if the job description has been extracted.")
     title: Optional[str] = Field(description="The job title in english.")
     description: Optional[str] = Field(description="The job description in english.")
-    keywords: Optional[list[str]] = Field(description="A list of important terms or phrases relevant to the job, such as skills, responsibilities, fields, or qualifications.")
+    keywords: Optional[list[str]] = Field(
+        description="A list of important terms focused on the job-specific skills, responsibilities, fields, or qualifications, and should not include geographic locations or overly broad categories. Limit to a maximum of 5 terms."
+    )
 
 
 def process_response(row: tuple, parser, labels) -> dict:
@@ -94,8 +96,6 @@ def process_response(row: tuple, parser, labels) -> dict:
         **validated_response.dict(),  # Unpack the parsed response details.
         "id": row_id,  # Include the row's ID.
         "label_code": label_code,  # Add the label corresponding to the class code, if valid.
-        "lang": row.lang,  # Include the language metadata.
-        "prompt": row.prompt,  # Include the original prompt metadata.
     }
 
 

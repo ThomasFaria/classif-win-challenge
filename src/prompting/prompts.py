@@ -68,7 +68,13 @@ def format_docs(docs: list):
 def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     description = getattr(row, kwargs.get("description_column"))
     title = getattr(row, kwargs.get("title_column"))
-    query = " ".join(filter(None, [title, description])) if title or description else "undefined"
+    keywords = row.keywords.tolist()
+
+    query = (
+        "\n".join(filter(None, [title, ", ".join(keywords), description]))
+        if title or description
+        else "undefined"
+    )
 
     # Retrieve documents
     retrieved_docs = retriever.invoke(query)
