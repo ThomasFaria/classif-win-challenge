@@ -72,7 +72,7 @@ def main(max_retry: int):
         client_settings=Settings(anonymized_telemetry=False, is_persistent=True),
     )
 
-    retriever = db.as_retriever(search_type=SEARCH_ALGO, search_kwargs={"k": 200})
+    retriever = db.as_retriever(search_type=SEARCH_ALGO, search_kwargs={"k": 100})
 
     sampling_params = SamplingParams(
         max_tokens=MAX_NEW_TOKEN, temperature=TEMPERATURE, top_p=0.8, repetition_penalty=1.05
