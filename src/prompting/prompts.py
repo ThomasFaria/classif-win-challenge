@@ -9,7 +9,7 @@ CLASSIF_PROMPT_SYS = """You are an expert in the International Standard Classifi
 3. Return the 4-digit code in JSON format as specified by the user. If the job cannot be classified within the given categories, return `null` in the JSON.
 """
 
-CLASSIF_PROMPT = """
+CLASSIF_PROMPT = """\
 - Job Ad Title:
 {title}
 
@@ -30,7 +30,7 @@ TRANSLATION_PROMPT_SYS = """You are an excellent translator from {language} to E
 3. **Return the translation in JSON format** as explained by the user.
 """
 
-TRANSLATION_PROMPT = """
+TRANSLATION_PROMPT = """\
 - Translate the following Job Ad Title in english:
 {title}
 
@@ -49,7 +49,7 @@ EXTRACTION_PROMPT_SYS = """You are a specialist in summarization. You will be pr
 
 """
 
-EXTRACTION_PROMPT = """
+EXTRACTION_PROMPT = """\
 - Job Ad Title:
 {title}
 
