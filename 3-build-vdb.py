@@ -32,7 +32,7 @@ from src.utils.data import extract_info, get_file_system
 from src.vector_db.document_chunker import chunk_documents
 
 
-def main(title_column: str, description_column: str, languages: list):
+def main(title_column: str, description_column: str, languages: list, quarter: int = None):
     fs = get_file_system()
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
@@ -89,6 +89,14 @@ def main(title_column: str, description_column: str, languages: list):
             print(f"No data found for language {lang}. Skipping...")
             continue
 
+        if quarter is not None:
+            idx_for_subset = [
+                ((data.shape[0] // 3) * (quarter - 1)),
+                ((data.shape[0] // 3) * quarter),
+            ]
+            idx_for_subset[-1] = idx_for_subset[-1] if quarter != 3 else data.shape[0]
+            data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
+
         data["lang"] = data["lang"].str.replace("lang=", "")
         data["job_desc_extracted"] = data["job_desc_extracted"].str.replace(
             "job_desc_extracted=", ""
@@ -119,7 +127,7 @@ def main(title_column: str, description_column: str, languages: list):
             pa.Table.from_pandas(data),
             root_path=URL_DATASET_PROMPTS,
             partition_cols=["lang", "job_desc_extracted"],
-            basename_template="part-{i}.parquet",
+            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
             existing_data_behavior="overwrite_or_ignore",
             filesystem=fs,
         )
@@ -145,8 +153,19 @@ if __name__ == "__main__":
         help="List of source languages for which you want to create prompts",
     )
 
+    parser.add_argument(
+        "--quarter",
+        type=int,
+        required=False,
+        help="Quarter of the dataset to process",
+    )
     # Parse the command-line arguments
     args = parser.parse_args()
 
     # Call the main function with parsed arguments
-    main(args.title_col, args.description_col, args.languages)
+    main(
+        title_column=args.title_col,
+        description_column=args.description_col,
+        languages=args.languages,
+        quarter=args.quarter,
+    )

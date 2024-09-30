@@ -18,6 +18,12 @@ spec:
             {"QUARTER": 2},
             {"QUARTER": 3}
             ]'
+      - name: params-conf-list-prompt
+        value: '[
+            {"QUARTER": 1},
+            {"QUARTER": 2},
+            {"QUARTER": 3}
+            ]'
       - name: params-conf-list-predictions
         value: '[
             {"QUARTER": 1},
@@ -49,16 +55,25 @@ spec:
             dependencies: [ run-detect-lang ]
             template: run-translate-desc
 
+        # Task 3a
+          - name: run-prompts-en
+            dependencies: [ run-translate-desc-en ]
+            template: run-prompts-en
+            arguments:
+              parameters:
+                - name: QUARTER
+                  value: "{{item.QUARTER}}"
+            # Pass the inputs to the task using "withParam"
+            withParam: "{{workflow.parameters.params-conf-list-prompt}}"
 
-        # Task 3
+        # Task 3b
           - name: run-prompts
-            dependencies: [ run-translate-desc-en, run-translate-desc ]
+            dependencies: [  run-translate-desc ]
             template: run-prompts
-
 
         # Task 4a
           - name: run-predictions-en
-            dependencies: [ run-prompts ]
+            dependencies: [ run-prompts-en ]
             template: run-predictions-en
             arguments:
               parameters:
@@ -238,6 +253,61 @@ spec:
                 name: github-info
                 key: token
 
+    - name: run-prompts-en
+      inputs:
+      parameters:
+        - name: QUARTER
+      nodeSelector:
+        nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
+      container:
+        image: thomasfaria/classif-win-challenge:main
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        command: ["/bin/bash", -c]
+        args:
+          - |
+            git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
+            cd classif-win-challenge/ &&
+            pip install -r requirements.txt &&
+            python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages en --quarter {{inputs.parameters.QUARTER}}
+
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        env:
+          # env var for s3 connexion
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: my-s3-creds
+                key: accessKey
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-s3-creds
+                key: secretKey
+          - name: AWS_DEFAULT_REGION
+            value: us-east-1
+          - name: AWS_S3_ENDPOINT
+            value: minio.lab.sspcloud.fr
+          - name: HF_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: hf-token
+                key: token
+          - name: GIT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: github-info
+                key: username
+          - name: GIT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-info
+                key: token
+
     - name: run-prompts
       nodeSelector:
         nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
@@ -254,7 +324,7 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages \
-              un en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
+              bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
 
         volumeMounts:
           - mountPath: /dev/shm
