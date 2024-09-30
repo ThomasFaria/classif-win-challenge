@@ -5,7 +5,7 @@ from src.utils.mapping import lang_mapping
 CLASSIF_PROMPT_SYS = """You are an expert in the International Standard Classification of Occupations (ISCO). Your goal is:
 
 1. Analyze the job title and job description provided by the user.
-2. From the list of occupational categories provided, identify the most appropriate ISCO code (4 digits) based on the job description.
+2. From the list of occupational categories provided, identify the most appropriate ISCO code (4 digits) based on the job description. If the job description is not clear, use the job title to classify the job.
 3. Return the 4-digit code in JSON format as specified by the user. If the job cannot be classified within the given categories, return `null` in the JSON.
 """
 
@@ -70,13 +70,29 @@ def format_docs(docs: list):
 
 
 def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
-    description = getattr(row, kwargs.get("description_column"))
+    task_description = "Retrieve the most relevant ISCO documents from the dataset based on the provided input by matching them with the closest ISCO classification labels."
+
     title = getattr(row, kwargs.get("title_column"))
+    description = getattr(row, kwargs.get("description_column"))
     keywords = ", ".join(row.keywords.tolist()) if row.keywords is not None else None
 
-    docs_title = retriever.invoke(title) if title is not None else None
-    docs_description = retriever.invoke(description) if description is not None else None
-    docs_keywords = retriever.invoke(keywords) if keywords is not None else None
+    input_txt = "Instruct: {task_description}\nQuery: {query}"
+
+    docs_title = (
+        retriever.invoke(input_txt.format(task_description=task_description, query=title))
+        if title is not None
+        else None
+    )
+    docs_description = (
+        retriever.invoke(input_txt.format(task_description=task_description, query=description))
+        if description is not None
+        else None
+    )
+    docs_keywords = (
+        retriever.invoke(input_txt.format(task_description=task_description, query=keywords))
+        if keywords is not None
+        else None
+    )
 
     all_docs = filter(None, [docs_title, docs_description, docs_keywords])
 

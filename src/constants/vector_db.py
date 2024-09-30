@@ -1,4 +1,4 @@
-EMBEDDING_MODEL = "dunzhang/stella_en_1.5B_v5"
+EMBEDDING_MODEL = "Alibaba-NLP/gte-Qwen2-7B-instruct"
 TRUNCATE_LABELS_DESCRIPTION = True
 SEARCH_ALGO = "similarity"
-MAX_CODE_RETRIEVED = 7
+MAX_CODE_RETRIEVED = 10
