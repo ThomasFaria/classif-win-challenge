@@ -32,7 +32,7 @@ spec:
         # Task 1
           - name: run-detect-lang
             template: run-detect-lang
-     
+
         # Task 2a
           - name: run-translate-desc-en
             dependencies: [ run-detect-lang ]
@@ -71,13 +71,6 @@ spec:
           - name: run-predictions
             dependencies: [ run-prompts ]
             template: run-predictions
-
-
-        # Task 5
-          - name: run-retry
-            dependencies: [ run-predictions-en, run-predictions ]
-            template: run-retry
-
 
 
     # Worker template 1
@@ -373,61 +366,6 @@ spec:
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
             python 4-classif-llm.py --languages bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
-
-        volumeMounts:
-          - mountPath: /dev/shm
-            name: dshm
-        env:
-          # env var for s3 connexion
-          - name: AWS_ACCESS_KEY_ID
-            valueFrom:
-              secretKeyRef:
-                name: my-s3-creds
-                key: accessKey
-          - name: AWS_SECRET_ACCESS_KEY
-            valueFrom:
-              secretKeyRef:
-                name: my-s3-creds
-                key: secretKey
-          - name: AWS_DEFAULT_REGION
-            value: us-east-1
-          - name: AWS_S3_ENDPOINT
-            value: minio.lab.sspcloud.fr
-          - name: HF_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: hf-token
-                key: token
-          - name: GIT_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: github-info
-                key: username
-          - name: GIT_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: github-info
-                key: token
-
-
-    - name: run-retry
-      nodeSelector:
-        nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
-      container:
-        image: thomasfaria/classif-win-challenge:main
-        imagePullPolicy: IfNotPresent
-        resources:
-          limits:
-            nvidia.com/gpu: 1
-        command: ["/bin/bash", -c]
-        args:
-          - |
-            git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
-            cd classif-win-challenge/ &&
-            pip install -r requirements.txt &&
-            huggingface-cli login --token $HF_TOKEN &&
-            export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 5-retry-classif.py --max_retry 3
 
         volumeMounts:
           - mountPath: /dev/shm
