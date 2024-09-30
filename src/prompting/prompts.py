@@ -1,5 +1,4 @@
 from src.utils.data import extract_info
-
 from src.utils.mapping import lang_mapping
 
 CLASSIF_PROMPT_SYS = """You are an expert in the International Standard Classification of Occupations (ISCO). Your goal is:

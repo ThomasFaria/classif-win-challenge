@@ -8,6 +8,7 @@ from chromadb.config import Settings
 from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
+from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from src.constants.llm import LLM_MODEL
@@ -24,6 +25,7 @@ from src.constants.vector_db import (
     SEARCH_ALGO,
     TRUNCATE_LABELS_DESCRIPTION,
 )
+from src.llm.build_llm import cache_model_from_hf_hub
 from src.prompting.prompts import create_prompt_with_docs
 from src.response.response_llm import LLMResponse
 from src.utils.data import extract_info, get_file_system
@@ -35,6 +37,10 @@ def main(title_column: str, description_column: str, languages: list):
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
     tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
+
+    cache_model_from_hf_hub(
+        EMBEDDING_MODEL,
+    )
 
     emb_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
@@ -99,7 +105,7 @@ def main(title_column: str, description_column: str, languages: list):
                     "title_column": title_column,
                 },
             )
-            for row in data.itertuples()
+            for row in tqdm(data.itertuples())
         ]
 
         batch_prompts = tokenizer.apply_chat_template(
