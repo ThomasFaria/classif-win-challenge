@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import pandas as pd
 import pyarrow as pa
@@ -38,10 +37,6 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
     tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
-    # TEMP
-    os.environ[
-        "MC_HOST_s3"
-    ] = f"https://{os.getenv("AWS_ACCESS_KEY_ID")}:{os.getenv("AWS_SECRET_ACCESS_KEY")}@{os.getenv("AWS_S3_ENDPOINT")}"
 
     cache_model_from_hf_hub(
         EMBEDDING_MODEL,
