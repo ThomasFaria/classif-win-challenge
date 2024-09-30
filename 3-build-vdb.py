@@ -47,7 +47,9 @@ def main(title_column: str, description_column: str, languages: list):
         labels_en = pd.read_csv(f, dtype=str)
 
     if TRUNCATE_LABELS_DESCRIPTION:
-        labels_en.loc[:, "description"] = labels_en["description"].apply(lambda x: extract_info(x))
+        labels_en.loc[:, "description"] = labels_en["description"].apply(
+            lambda x: extract_info(x, paragraphs=["description", "tasks", "examples"])
+        )
 
     all_splits = chunk_documents(data=labels_en, hf_tokenizer_name=EMBEDDING_MODEL)
 

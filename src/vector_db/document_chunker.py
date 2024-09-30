@@ -40,14 +40,6 @@ def chunk_documents(
     # Split documents into chunks
     docs_processed = text_splitter.split_documents(document_list)
 
-    # Remove duplicates
-    #    unique_texts = set()
-    #    docs_processed_unique = []
-    #    for doc in docs_processed:
-    #        if doc.page_content not in unique_texts:
-    #            unique_texts.add(doc.page_content)
-    #            docs_processed_unique.append(doc)
-
     print(f"Number of created chunks: {len(docs_processed)} in the Vector Database")
 
     return docs_processed

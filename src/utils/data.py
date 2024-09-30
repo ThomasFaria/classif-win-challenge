@@ -17,36 +17,62 @@ def get_file_system() -> s3fs.S3FileSystem:
     )
 
 
-def extract_info(input_str, only_description=False):
+def extract_info(input_str, paragraphs: list):
     # Split the string by newlines
     lines = [line.strip() for line in input_str.split("\n")]
 
     # Store the first element of the list (the description)
     result = [lines[0].strip()]
-    if only_description:
+    if len(paragraphs) == 1 and "description" in paragraphs:
         return "\n".join(result)
 
-    # Find the index of the examples
-    try:
-        # Try to find either of the example strings
-        examples_index = next(
-            lines.index(example)
-            for example in [
-                "Examples of the occupations classified here:",
-                "Example of the occupations classified here:",
-            ]
-            if example in lines
-        )
-    except (ValueError, StopIteration):
-        return "\n".join(result)  # Return only the description
+    if "tasks" in paragraphs:
+        # Find the index of the examples
+        try:
+            # Try to find either of the example strings
+            tasks_index = next(
+                lines.index(task)
+                for task in [
+                    "Tasks include -",
+                    "In such cases tasks would include -",
+                    "In such cases tasks performed would include -",
+                    "In such instances tasks would include -",
+                ]
+                if task in lines
+            )
+        except (ValueError, StopIteration):
+            return "\n".join(result)
 
-    # add examples
-    result.append(lines[examples_index])
-    for line in lines[examples_index + 1 :]:
-        if line.startswith("-"):
-            result.append(line.strip())
-        else:
-            break
+        # add examples
+        result.append(lines[tasks_index])
+        for line in lines[tasks_index + 1 :]:
+            if line.startswith("("):
+                result.append(line.strip())
+            else:
+                break
+
+    if "examples" in paragraphs:
+        # Find the index of the examples
+        try:
+            # Try to find either of the example strings
+            examples_index = next(
+                lines.index(example)
+                for example in [
+                    "Examples of the occupations classified here:",
+                    "Example of the occupations classified here:",
+                ]
+                if example in lines
+            )
+        except (ValueError, StopIteration):
+            return "\n".join(result)  # Return only the description
+
+        # add examples
+        result.append(lines[examples_index])
+        for line in lines[examples_index + 1 :]:
+            if line.startswith("-"):
+                result.append(line.strip())
+            else:
+                break
 
     return "\n".join(result)
 

@@ -1,5 +1,4 @@
-import pandas as pd
-from langchain_community.document_loaders import DataFrameLoader
+from src.utils.data import extract_info
 
 from src.utils.mapping import lang_mapping
 
@@ -61,7 +60,10 @@ EXTRACTION_PROMPT = """
 
 def format_docs(docs: list):
     return "\n\n".join(
-        [f"{doc.metadata['code']}: {doc.metadata['label']} - {doc.page_content}" for doc in docs]
+        [
+            f"{doc.metadata['code']}: {doc.metadata['label']} - {extract_info(doc.page_content, paragraphs=["description", "examples"])}"
+            for doc in docs
+        ]
     )
 
 
@@ -70,28 +72,23 @@ def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     title = getattr(row, kwargs.get("title_column"))
     keywords = ", ".join(row.keywords.tolist()) if row.keywords is not None else None
 
-    query = (
-        "\n".join(filter(None, [title, keywords, description]))
-        if title or description
-        else "undefined"
-    )
+    docs_title = retriever.invoke(title) if title is not None else None
+    docs_description = retriever.invoke(description) if description is not None else None
+    docs_keywords = retriever.invoke(keywords) if keywords is not None else None
 
-    # Retrieve documents
-    retrieved_docs = retriever.invoke(query)
+    all_docs = filter(None, [docs_title, docs_description, docs_keywords])
 
-    retrieved_codes = [doc.metadata["code"] for doc in retrieved_docs]
-    relevant_code_en = labels_en[labels_en["code"].isin(retrieved_codes)].copy()
-    relevant_code_en["code"] = pd.Categorical(
-        relevant_code_en["code"], categories=retrieved_codes, ordered=True
-    )
-    relevant_code_en = relevant_code_en.sort_values("code")
-    retrieved_docs_en = DataFrameLoader(relevant_code_en, page_content_column="description").load()
+    retrieved_docs = []
+    for lst in all_docs:
+        for item in lst:
+            if item not in retrieved_docs:
+                retrieved_docs.append(item)
 
     prompt = CLASSIF_PROMPT.format(
         **{
             "title": title,
             "description": description,
-            "proposed_categories": format_docs(retrieved_docs_en),
+            "proposed_categories": format_docs(retrieved_docs),
             "format_instructions": parser.get_format_instructions(),
         }
     )
