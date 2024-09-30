@@ -26,6 +26,7 @@ TRANSLATION_PROMPT_SYS = """You are an excellent translator from {language} to E
 
 1. **Extract and translate the job title** from {language} to English. Ensure that the title is accurately translated and meaningful.
 2. **Extract and translate the job description** (which includes key responsibilities, tasks, and role details) from {language} to English. Summarize the description if necessary, but ensure that all relevant keywords and key information are included. Usually three or four sentences are enough.
+3. **Select relevant keywords**: Identify important keywords that classify the job offer, even if they are not directly mentioned in the text. For example, if the job is for a software developer, include terms like "programming" and "software development." Focus only on keywords related to the role and responsibilities, excluding irrelevant details like location or contract type.
 3. **Return the translation in JSON format** as explained by the user.
 """
 
@@ -41,9 +42,10 @@ TRANSLATION_PROMPT = """
 
 EXTRACTION_PROMPT_SYS = """You are a specialist in summarization. You will be provided with a possibly noisy job offer, and your task is to extract the main information. Specifically:
 
-1. Extract and summarize the relevant information about the **job title** and **job description**. Focus on key responsibilities, tasks, and role details, as this information will be used to classify the job offer.
+1. **Extract and summarize** the relevant information about the **job title** and **job description**. Focus on key responsibilities, tasks, and role details, as this information will be used to classify the job offer.
 2. Ensure the summary captures all key details and important keywords related to the job.
-3. Return both the job title and the summarized job description in a JSON format, as specified by the user.
+3. **Select relevant keywords**: Identify important keywords that classify the job offer, even if they are not directly mentioned in the text. For example, if the job is for a software developer, include terms like "programming" and "software development." Focus only on keywords related to the role and responsibilities, excluding irrelevant details like location or contract type.
+4. **Return the job title, the summarized job description and keywords in a JSON format**, as specified by the user.
 
 """
 
