@@ -33,7 +33,7 @@ data[["lang", "score"]] = (
 )
 # Set lang to undefined when score are low
 data["lang"] = data.apply(lambda row: "un" if row["score"] < 0.4 else row["lang"], axis=1)
-# Set lang to undifined if not an EU language
+# Set lang to undefined (lang="un") if not an EU language
 data["lang"] = data["lang"].where(data["lang"].isin(lang_mapping["lang_iso_2"]), "un")
 
 # Truncate the description
