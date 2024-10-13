@@ -54,6 +54,7 @@ for idx, row in data.iterrows():
         i += 1
     data.loc[idx, "description_truncated"] = text_truncated
 
+# save to parquet file
 pq.write_to_dataset(
     pa.Table.from_pandas(data),
     root_path=URL_DATASET_WITH_LANG,
@@ -64,14 +65,3 @@ pq.write_to_dataset(
 )
 
 
-# # Fonction pour extraire les 5 mots précédant l'abréviation
-# def extract_job_title(line):
-#     # Regex pour capturer les 5 mots précédant l'abréviation
-#     match = re.search(r"(\b\w+\b[\s,]*){1,5}(?=\s*(" + abbreviations + "))", line, re.IGNORECASE)
-#     if match:
-#         return match.group().strip()
-#     return None
-
-# # Appliquer la fonction extract_job_title aux colonne 'description' et 'title' pour extraire les libellés de poste
-# data["description_job_title"] = data["description"].apply(extract_job_title)
-# data["title_job_title"] = data["title"].apply(extract_job_title)
