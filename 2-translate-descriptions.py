@@ -17,12 +17,23 @@ from src.constants.llm import (
 )
 from src.constants.paths import URL_DATASET_TRANSLATED, URL_DATASET_WITH_LANG
 from src.llm.build_llm import cache_model_from_hf_hub  # Cache the model from Hugging Face Hub
-from src.prompting.prompts import create_translation_prompt  # Function to create translation prompts
-from src.response.response_llm import TranslatorResponse, process_translation  # Response handling and translation processing
+from src.prompting.prompts import (
+    create_translation_prompt,  # Function to create translation prompts
+)
+from src.response.response_llm import (  # Response handling and translation processing
+    TranslatorResponse,
+    process_translation,
+)
 from src.utils.data import get_file_system  # Utility for file system operations
 
 
-def main(title_column: str, description_column: str, languages: list, quarter: int = None):
+def main(
+    title_column: str,
+    description_column: str,
+    languages: list,
+    quarter: int = None,
+    use_s3: bool = False,
+):
     """
     Main function to translate job descriptions from various languages into English.
 
@@ -32,14 +43,39 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         languages (list): A list of languages to translate from.
         quarter (int, optional): The quarter of the dataset to process (used for partitioning).
     """
-    # Get the file system handler to access dataset files
-    fs = get_file_system()
-    
+
+    if use_s3:
+        # Get the file system handler to access dataset files
+        fs = get_file_system()
+
+        # Load the dataset from Parquet files, filtering by the specified languages
+        data = (
+            pq.ParquetDataset(URL_DATASET_WITH_LANG.replace("s3://", ""), filesystem=fs)
+            .read()
+            .filter(ds.field("lang").isin([f"lang={lang}" for lang in languages]))
+            .to_pandas()
+        )
+        # TODO
+
+        # Cache the pre-trained LLM model locally (from Hugging Face Hub)
+        cache_model_from_hf_hub(LLM_MODEL)
+    else:
+        # Load the dataset from Parquet files, filtering by the specified languages
+        data = (
+            pq.ParquetDataset(f"data/{"/".join(URL_DATASET_WITH_LANG.split("/")[-2:])}")
+            .read()
+            .filter(ds.field("lang").isin([f"lang={lang}" for lang in languages]))
+            .to_pandas()
+        )
+        # TODO
+
+    # If no data is found for the specified languages, skip the process
+    if data.empty:
+        print(f"No data found for languages {', '.join(languages)}. Skipping...")
+        return None
+
     # Initialize an output parser for handling LLM responses related to translation
     parser = PydanticOutputParser(pydantic_object=TranslatorResponse)
-
-    # Cache the pre-trained LLM model locally (from Hugging Face Hub)
-    cache_model_from_hf_hub(LLM_MODEL)
 
     # Define sampling parameters for text generation (controls temperature, max tokens, etc.)
     sampling_params = SamplingParams(
@@ -52,35 +88,16 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
     # Initialize the LLM with specific memory and performance settings
     llm = LLM(model=LLM_MODEL, max_model_len=20000, gpu_memory_utilization=0.95)
 
-    # Load the dataset from Parquet files, filtering by the specified languages
-    data = (
-        ds.dataset(
-            URL_DATASET_WITH_LANG.replace("s3://", ""),  # Load dataset from the specified path
-            partitioning=["lang"],  # Dataset is partitioned by language
-            format="parquet",
-            filesystem=fs,  # Use the specified file system
-        )
-        .to_table()  # Convert dataset to a table
-        .filter(ds.field("lang").isin([f"lang={lang}" for lang in languages]))  # Filter by languages
-        .to_pandas()  # Convert to a pandas DataFrame
-    )
-
-    # If no data is found for the specified languages, skip the process
-    if data.empty:
-        print(f"No data found for languages {', '.join(languages)}. Skipping...")
-        return None
-
     # If quarter is specified, process only a subset of the data for that quarter
     if quarter is not None:
         idx_for_subset = [
             ((data.shape[0] // 3) * (quarter - 1)),  # Start index for the subset
             ((data.shape[0] // 3) * quarter),  # End index for the subset
         ]
-        idx_for_subset[-1] = idx_for_subset[-1] if quarter != 3 else data.shape[0]  # Adjust for the last quarter
+        idx_for_subset[-1] = (
+            idx_for_subset[-1] if quarter != 3 else data.shape[0]
+        )  # Adjust for the last quarter
         data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]  # Select subset
-
-    # Clean up the 'lang' column by removing the "lang=" prefix
-    data.loc[:, "lang"] = data.loc[:, "lang"].str.replace("lang=", "")
 
     # Generate translation prompts for each row in the dataset
     prompts = [
@@ -99,10 +116,12 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
     batch_prompts = tokenizer.apply_chat_template(
         prompts, tokenize=False, add_generation_prompt=True
     )
-    
+
     # Generate translations using the LLM and the specified sampling parameters
     outputs = llm.generate(batch_prompts, sampling_params=sampling_params)
-    translations = [outputs[i].outputs[0].text for i in range(len(outputs))]  # Extract translations from output
+    translations = [
+        outputs[i].outputs[0].text for i in range(len(outputs))
+    ]  # Extract translations from output
 
     # Add the raw translations back into the original dataset
     data.loc[:, "raw_translations"] = translations
@@ -121,15 +140,31 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         on="id",  # Merge on the 'id' column
     )
 
-    # Write the updated dataset (with translations) to a Parquet dataset
-    pq.write_to_dataset(
-        pa.Table.from_pandas(data),  # Convert pandas DataFrame back to Arrow Table
-        root_path=URL_DATASET_TRANSLATED,  # Save dataset to the translated data path
-        partition_cols=["lang", "job_desc_extracted"],  # Partition by language and job description
-        basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",  # Filename template for Parquet parts
-        existing_data_behavior="overwrite_or_ignore",  # Overwrite or ignore existing data
-        filesystem=fs,  # Use the specified file system
-    )
+    if use_s3:
+        # Write the updated dataset (with translations) to a Parquet dataset
+        pq.write_to_dataset(
+            pa.Table.from_pandas(data),  # Convert pandas DataFrame back to Arrow Table
+            root_path=URL_DATASET_TRANSLATED,  # Save dataset to the translated data path
+            partition_cols=[
+                "lang",
+                "job_desc_extracted",
+            ],  # Partition by language and job description
+            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",  # Filename template for Parquet parts
+            existing_data_behavior="overwrite_or_ignore",  # Overwrite or ignore existing data
+            filesystem=fs,  # Use the specified file system
+        )
+    else:
+        # Write the updated dataset (with translations) to a Parquet dataset
+        pq.write_to_dataset(
+            pa.Table.from_pandas(data),  # Convert pandas DataFrame back to Arrow Table
+            root_path=f"data/{'/'.join(URL_DATASET_TRANSLATED.split('/')[-2:])}",  # Save dataset to the translated data path
+            partition_cols=[
+                "lang",
+                "job_desc_extracted",
+            ],  # Partition by language and job description
+            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",  # Filename template for Parquet parts
+            existing_data_behavior="overwrite_or_ignore",  # Overwrite or ignore existing data
+        )
 
 
 if __name__ == "__main__":
@@ -160,7 +195,14 @@ if __name__ == "__main__":
         required=False,
         help="Quarter of the dataset to process",
     )
-    
+
+    # Optional argument for specifying if S3 storage should be used
+    parser.add_argument(
+        "--use_s3",
+        type=bool,
+        required=False,
+        help="Use S3 storage for reading and writing data",
+    )
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -170,4 +212,5 @@ if __name__ == "__main__":
         description_column=args.description_col,
         languages=args.languages,
         quarter=args.quarter,
+        use_s3=args.use_s3,
     )
