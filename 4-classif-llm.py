@@ -15,7 +15,12 @@ from src.constants.llm import (
     TEMPERATURE,
     TOP_P,
 )
-from src.constants.paths import URL_DATASET_PREDICTED, URL_DATASET_PROMPTS, URL_LABELS
+from src.constants.paths import (
+    URL_DATASET_PREDICTED,
+    URL_DATASET_PROMPTS,
+    URL_LABELS,
+    URL_SUBMISSIONS,
+)
 from src.llm.build_llm import cache_model_from_hf_hub
 from src.response.response_llm import LLMResponse, process_response
 from src.utils.data import get_file_system
@@ -124,6 +129,11 @@ def main(languages: list, third: int = None, use_s3: bool = False):
             existing_data_behavior="overwrite_or_ignore",  # Overwrite existing data or ignore
             filesystem=fs,
         )
+        with fs.open(URL_SUBMISSIONS, "w") as f:
+            submissions = data.loc[:, ["id", "class_code", "codable"]]
+            submissions.loc[submissions["codable"] == "false", "class_code"] = None
+            submissions.loc[:, ["id", "class_code"]].to_csv(f, header=False, index=False)
+
     else:
         # Write the updated dataset (with predictions) to a Parquet file
         pq.write_to_dataset(
@@ -136,6 +146,12 @@ def main(languages: list, third: int = None, use_s3: bool = False):
             ],  # Partition by language and job description
             basename_template=f"part-{{i}}{f'-{third}' if third else ''}.parquet",  # Naming pattern for files
             existing_data_behavior="overwrite_or_ignore",  # Overwrite existing data or ignore
+        )
+
+        submissions = data.loc[:, ["id", "class_code", "codable"]]
+        submissions.loc[submissions["codable"] == "false", "class_code"] = None
+        submissions.loc[:, ["id", "class_code"]].to_csv(
+            f"data/{'/'.join(URL_SUBMISSIONS.split('/')[-2:])}", header=False, index=False
         )
 
 

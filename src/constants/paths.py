@@ -15,3 +15,5 @@ URL_DATASET_PREDICTED = (
 )
 
 CHROMA_DB_LOCAL_DIRECTORY = "data/chroma_db"
+
+URL_SUBMISSIONS = "s3://projet-dedup-oja/challenge_classification/submission/classification.csv"
