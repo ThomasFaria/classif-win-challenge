@@ -16,7 +16,7 @@ from src.utils.mapping import (  # Specific description for a job ID and languag
     lang_mapping,
 )
 
-USE_S3 = True  # Set to True to use S3 storage
+USE_S3 = False  # Set to True to use S3 storage
 if USE_S3:
     # Get the file system handler for interacting with storage
     fs = get_file_system()
