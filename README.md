@@ -46,3 +46,7 @@ python 4-classif-llm.py
 Each of the 4 steps output its results in the directory `data/processed-data/` in parquet format.
 Final stage produce the classification.csv file in the directory `data/raw-data` as well as the parquet file in `data/processed-data/`
 
+---
+## Model used
+
+To translate title and description of job advertissements as well as predict its ISCO code we currently use Qwen2.5-32B-Instruct (see https://github.com/QwenLM/Qwen2.5)
