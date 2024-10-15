@@ -1,52 +1,135 @@
-# classif-win-challenge
----
-In the area of Web Intelligence, the **European Statistics Awards Programme** aims to discover promising methodologies for processing of content from the World Wide Web with the purpose to extract valuable data to be used for statistical and analytical purposes.
+# Web Intelligence Classification Challenge for Online Job Advertisements
 
-The **European Statistics Awards**  WEB INTELLIGENCE CLASSIFICATION OF OCCUPATIONS FOR ONLINE JOB ADVERTISEMENTS CHALLENGE (WI CLASSIFICATION CHALLENGE) will focus on developing approaches that learn how to assign a class label (from the known taxonomy) to job advertisements from a given dataset.
+## Overview
 
-see https://statistics-awards.eu/competitions/12#learn_the_details
+This repository contains the codebase for the **European Statistics Awards Programme's WEB INTELLIGENCE CLASSIFICATION OF OCCUPATIONS FOR ONLINE JOB ADVERTISEMENTS CHALLENGE (WI CLASSIFICATION CHALLENGE)**. The goal is to develop innovative approaches for classifying job advertisements into standardized taxonomies, specifically the International Standard Classification of Occupations (ISCO).
 
----
+## Challenge Description
 
-Classifying job offers into structured taxonomies, such as the International Standard Classification of Occupations (ISCO), is a complex task, especially when dealing with multilingual data. Traditional methods often rely on large, manually labeled datasets and language-specific rules, making them difficult to scale and maintain. However, advancements in large language models (LLMs) provide a more efficient solution through the approach of "leveraging LLMs for classification tasks."
+The European Statistics Awards Programme aims to discover promising methodologies for processing content from the World Wide Web to extract valuable data for statistical and analytical purposes. This challenge focuses on developing approaches that learn how to assign class labels (from a known taxonomy) to job advertisements in a given dataset.
 
-Processing steps :
+For more details, visit the [official challenge page](https://statistics-awards.eu/competitions/12#learn_the_details).
 
-Our framework processes the input file in four key stages, each designed to streamline the classification of job advertisements ):
+## Our Approach
 
-1. Data Cleaning and Enrichment: The first step involves cleaning the data to remove inconsistencies and irrelevant information. We also enrich the dataset by adding important variables, such as identifying the language in which each job advertisement is written.
-The output dataset is saved as a parquet file in directory data/processed-data/wi_dataset_by_lang
+We leverage advanced Large Language Models (LLMs) to tackle the complex task of classifying multilingual job offers into structured taxonomies. Our approach offers a more efficient solution compared to traditional methods that rely on large, manually labeled datasets and language-specific rules.
 
-2. Translation and Keyword Detection: In the second step, we handle job ads written in languages other than English. These are translated into English (using our LLM model) to ensure consistency and to enable the use of a specialized english-language vector database (see step 3) for more accurate retrieval of relevant job descriptions. Simultaneously, we conduct keywords detection to highlight essential terms relevant to job classification.
-The output dataset is saved in directory data/processed-data/wi_dataset_by_lang_translated
+### Processing Pipeline
 
-3. Vector Database Creation and Prompt Generation: In this step, we build a Chroma vector database by embedding the explanatory notes from the ISCO classification system, chunked by ISCO code. We then perform a similarity search between the embeddings of the job title, description, and keywords, and the embeddings of the explanatory notes. The top 5 most similar ISCO codes are selected. Using these top 5 codes, we generate tailored prompts for the LLM, ensuring that the model has access to the most relevant labels and context for accurate job classification.
-The output dataset is saved in directory data/processed-data/wi_dataset_by_lang_prompts
+Our framework processes the input data in four key stages:
 
-4. Prediction: In the final step, the LLM uses the generated prompt to predict the correct ISCO code from the top 5 codes selected in the previous phase. The model leveraging the context and relevant information embedded in the prompt, chooses the most appropriate ISCO code among the shortlisted options.
-The output dataset is saved as a parquet file in directory data/processed-data/predictions_by_lang
+1. **Language Detection**
+   - Detect the language of each job advertisement
+   - Script: `1-detect-language.py`
+   - Output: Parquet files in `data/processed-data/wi_dataset_by_lang`
 
----
-## How to use our code
+2. **Translation**
+   - Translate non-English job ads to English using our LLM model
+   - Script: `2-translate-descriptions.py`
+   - Output: Parquet files in `data/processed-data/wi_dataset_by_lang_translated`
 
-The input data files (`wi_datasets.csv` and `wi_labels.csv`) should be placed in the `data/raw-data` directory. 
+3. **Vector Database Creation and Prompt Generation**
+   - Build a Chroma vector database by embedding explanatory notes from the ISCO classification system
+   - Generate tailored prompts for the LLM using the top 5 most similar ISCO codes
+   - Script: `3-build-vdb.py`
+   - Output: Parquet files in `data/processed-data/wi_dataset_by_lang_prompts`
 
-Our code is written in Python, and before executing it, please run the command:  
+4. **Prediction**
+   - Use the LLM with generated prompts to predict the correct ISCO code
+   - Script: `4-classif-llm.py`
+   - Output: Parquet files in `data/processed-data/predictions_by_lang`
+
+## Installation and Usage
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/thomasfaria/classif-win-challenge.git
+   cd classif-win-challenge
+   ```
+
+2. Install the required dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. Place the input data files (`wi_dataset.csv` and `wi_labels.csv`) in the `data/raw-data` directory.
+
+4. Run the processing pipeline in order:
+   ```
+   python 1-detect-language.py
+   python 2-translate-descriptions.py
+   python 3-build-vdb.py
+   python 4-classif-llm.py
+   ```
+
+## Argo Workflows
+
+The project includes Argo Workflow configurations for orchestrating the pipeline in a Kubernetes environment. These workflows automate the execution of our classification pipeline, making it easier to process large datasets efficiently.
+
+### Workflow Files
+
+The workflow configuration files are located in the `argo-workflows` directory:
+
+- `1-detect-lang.yaml`: Language detection step
+- `2-translate-desc.yaml`: Translation step
+- `3-create_prompts.yaml`: Vector database creation and prompt generation
+- `4-make_predictions.yaml`: ISCO code prediction
+- `pipeline_full.yml`: Combines all steps into a single workflow
+
+### Running the Pipeline
+
+To run the full pipeline using Argo Workflows, use the following command:
+
+```bash
+argo submit argo-workflows/pipeline_full.yml
 ```
-pip install -r requirements.txt
+
+### Important Note on Argo Workflows Execution
+
+Running Argo Workflows requires access to a Kubernetes cluster with Argo installed. In our setup, we use the SSP Cloud environment, which provides the necessary infrastructure.
+
+If you're interested in trying out the Argo Workflows for this project you'll need an SSP Cloud account. We would be happy to introduce you to the SSP Cloud environment and help you get started, so, please, reach out to us for assistance in setting up and running the workflows.
+
+
+## Project Structure
+
 ```
-The names of the code files are prefixed with numbers, which indicate the order in which they should be executed :
-```
-python 1-detect-language.py
-python 2-translate-descriptions.py
-python 3-build-vdb.py
-python 4-classif-llm.py
+.
+├── 1-detect-language.py
+├── 2-translate-descriptions.py
+├── 3-build-vdb.py
+├── 4-classif-llm.py
+├── argo-workflows/
+├── data/
+│   ├── chroma_db/
+│   ├── processed-data/
+│   ├── raw-data/
+│   └── submission/
+├── Dockerfile
+├── README.md
+├── requirements.txt
+└── src/
+    ├── constants/
+    ├── detect_lang/
+    ├── llm/
+    ├── prompting/
+    ├── response/
+    ├── utils/
+    └── vector_db/
 ```
 
-Each of the 4 steps output its results in the directory `data/processed-data/` in parquet format.
-Final stage produce the classification.csv file in the directory `submissions/` as well as the parquet file in `data/processed-data/`
+### Key Directories and Files
 
----
-## Model used
+- `src/`: Contains the core Python modules for each component of the pipeline
+- `data/`: Stores raw input data, processed data, and the Chroma vector database
+- `argo-workflows/`: Contains Argo Workflow configuration files (templates)
+- `Dockerfile`: For containerizing the application
+- `requirements.txt`: Lists Python dependencies
 
-To translate title and description of job advertissements as well as predict its ISCO code we currently use Qwen2.5-32B-Instruct (see https://github.com/QwenLM/Qwen2.5)
+## Model Information
+
+We currently use Qwen2.5-32B-Instruct (https://github.com/QwenLM/Qwen2.5) for translation and ISCO code prediction. This model requires approximately 75GB of VRAM. If you don't have access to such hardware, consider using smaller models.
+
+## License
+
+This project is licensed under the terms of the LICENSE file in the root directory.
