@@ -1,7 +1,7 @@
 import argparse
+
 import pandas as pd
 import pyarrow as pa
-import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from chromadb.config import Settings
 from langchain_community.vectorstores import Chroma
@@ -31,18 +31,32 @@ from src.utils.data import extract_info, get_file_system
 from src.vector_db.document_chunker import chunk_documents
 
 
-def main(title_column: str, description_column: str, languages: list, quarter: int = None):
-    # Initialize the file system handler for data loading
-    fs = get_file_system()
-    
+def main(
+    title_column: str,
+    description_column: str,
+    languages: list,
+    third: int = None,
+    use_s3: bool = False,
+):
+    if use_s3:
+        # Get the file system handler to access dataset files
+        fs = get_file_system()
+
+        # Load the labels dataset
+        with fs.open(URL_LABELS) as f:
+            labels = pd.read_csv(f, dtype=str)
+
+        # Cache the embedding model from HuggingFace Hub (need s3 bucket access)
+        cache_model_from_hf_hub(EMBEDDING_MODEL)
+    else:
+        # Load the labels dataset
+        labels = pd.read_csv(f"data/{"/".join(URL_LABELS.split("/")[-2:])}", dtype=str)
+
     # Initialize output parser for LLM responses
     parser = PydanticOutputParser(pydantic_object=LLMResponse)
 
     # Load the tokenizer for the language model
     tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
-
-    # Cache the embedding model from HuggingFace Hub
-    cache_model_from_hf_hub(EMBEDDING_MODEL)
 
     # Create an embedding model for generating document embeddings
     emb_model = HuggingFaceEmbeddings(
@@ -52,18 +66,14 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         show_progress=False,
     )
 
-    # Load the labels dataset (in English)
-    with fs.open(URL_LABELS) as f:
-        labels_en = pd.read_csv(f, dtype=str)
-
-    # Optionally truncate the label descriptions based on configuration
+    # Optionally truncate the label descriptions so that to keep only relevant information and not overload the prompt
     if TRUNCATE_LABELS_DESCRIPTION:
-        labels_en.loc[:, "description"] = labels_en["description"].apply(
+        labels.loc[:, "description"] = labels["description"].apply(
             lambda x: extract_info(x, paragraphs=["description", "tasks", "examples"])
         )
 
     # Chunk the labels into smaller parts for more efficient processing
-    all_splits = chunk_documents(data=labels_en, hf_tokenizer_name=EMBEDDING_MODEL)
+    all_splits = chunk_documents(data=labels, hf_tokenizer_name=EMBEDDING_MODEL)
 
     # Initialize a local Chroma vector database with the label embeddings
     db = Chroma.from_documents(
@@ -81,38 +91,41 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
     for lang in languages:
         print(f"Creating prompts for language: {lang}")
 
-        # Load the translated dataset (in Parquet format) for the current language
-        data = (
-            ds.dataset(
-                URL_DATASET_TRANSLATED.replace("s3://", ""),
-                partitioning=["lang", "job_desc_extracted"],
-                format="parquet",
-                filesystem=fs,
+        if use_s3:
+            # Load the dataset from Parquet files, filtering by the specified languages
+            data = (
+                pq.ParquetDataset(
+                    URL_DATASET_TRANSLATED.replace("s3://", ""),
+                    filters=[("lang", "in", languages)],
+                    filesystem=fs,
+                )
+                .read()
+                .to_pandas()
             )
-            .to_table()
-            .filter((ds.field("lang") == f"lang={lang}"))
-            .to_pandas()
-        )
+        else:
+            # Load the dataset from Parquet files, filtering by the specified languages
+            data = (
+                pq.ParquetDataset(
+                    f"data/{"/".join(URL_DATASET_TRANSLATED.split("/")[-2:])}",
+                    filters=[("lang", "in", languages)],
+                )
+                .read()
+                .to_pandas()
+            )
 
         # If there is no data for the current language, skip to the next one
         if data.empty:
             print(f"No data found for language {lang}. Skipping...")
             continue
 
-        # If a specific quarter is provided, process only a subset of the data
-        if quarter is not None:
+        # If a specific third is provided, process only a subset of the data
+        if third is not None:
             idx_for_subset = [
-                ((data.shape[0] // 3) * (quarter - 1)),
-                ((data.shape[0] // 3) * quarter),
+                ((data.shape[0] // 3) * (third - 1)),
+                ((data.shape[0] // 3) * third),
             ]
-            idx_for_subset[-1] = idx_for_subset[-1] if quarter != 3 else data.shape[0]
+            idx_for_subset[-1] = idx_for_subset[-1] if third != 3 else data.shape[0]
             data = data.iloc[idx_for_subset[0] : idx_for_subset[1]]
-
-        # Clean up the language and job description columns by removing prefixes
-        data["lang"] = data["lang"].str.replace("lang=", "")
-        data["job_desc_extracted"] = data["job_desc_extracted"].str.replace(
-            "job_desc_extracted=", ""
-        )
 
         # Generate prompts for each row of the dataset
         prompts = [
@@ -120,7 +133,7 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
                 row,
                 parser,
                 retriever,
-                labels_en,
+                labels,
                 **{
                     "description_column": description_column,
                     "title_column": title_column,
@@ -137,15 +150,25 @@ def main(title_column: str, description_column: str, languages: list, quarter: i
         # Merge the generated prompts back into the original dataset
         data.loc[:, "prompt"] = batch_prompts
 
-        # Write the updated dataset with prompts to a Parquet dataset
-        pq.write_to_dataset(
-            pa.Table.from_pandas(data),
-            root_path=URL_DATASET_PROMPTS,
-            partition_cols=["lang", "job_desc_extracted"],
-            basename_template=f"part-{{i}}{f'-{quarter}' if quarter else ""}.parquet",
-            existing_data_behavior="overwrite_or_ignore",
-            filesystem=fs,
-        )
+        if use_s3:
+            # Write the updated dataset with prompts to a Parquet dataset
+            pq.write_to_dataset(
+                pa.Table.from_pandas(data),
+                root_path=URL_DATASET_PROMPTS,
+                partition_cols=["lang", "job_desc_extracted"],
+                basename_template=f"part-{{i}}{f'-{third}' if third else ""}.parquet",
+                existing_data_behavior="overwrite_or_ignore",
+                filesystem=fs,
+            )
+        else:
+            # Write the updated dataset with prompts to a Parquet dataset
+            pq.write_to_dataset(
+                pa.Table.from_pandas(data),
+                root_path=f"data/{'/'.join(URL_DATASET_PROMPTS.split('/')[-2:])}",
+                partition_cols=["lang", "job_desc_extracted"],
+                basename_template=f"part-{{i}}{f'-{third}' if third else ""}.parquet",
+                existing_data_behavior="overwrite_or_ignore",
+            )
 
 
 if __name__ == "__main__":
@@ -168,14 +191,22 @@ if __name__ == "__main__":
         help="List of source languages for which you want to create prompts",
     )
 
-    # Optional argument for specifying the dataset quarter to process
+    # Optional argument for specifying the dataset third to process
     parser.add_argument(
-        "--quarter",
+        "--third",
         type=int,
         required=False,
-        help="Quarter of the dataset to process",
+        help="Third of the dataset to process",
     )
-    
+
+    # Optional argument for specifying if S3 storage should be used
+    parser.add_argument(
+        "--use_s3",
+        type=bool,
+        required=False,
+        help="Use S3 storage for reading and writing data",
+    )
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -184,5 +215,6 @@ if __name__ == "__main__":
         title_column=args.title_col,
         description_column=args.description_col,
         languages=args.languages,
-        quarter=args.quarter,
+        third=args.third,
+        use_s3=args.use_s3,
     )
