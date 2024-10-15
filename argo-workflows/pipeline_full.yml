@@ -14,21 +14,21 @@ spec:
     parameters:
       - name: params-conf-list-translate-desc
         value: '[
-            {"QUARTER": 1},
-            {"QUARTER": 2},
-            {"QUARTER": 3}
+            {"THIRD": 1},
+            {"THIRD": 2},
+            {"THIRD": 3}
             ]'
       - name: params-conf-list-prompt
         value: '[
-            {"QUARTER": 1},
-            {"QUARTER": 2},
-            {"QUARTER": 3}
+            {"THIRD": 1},
+            {"THIRD": 2},
+            {"THIRD": 3}
             ]'
       - name: params-conf-list-predictions
         value: '[
-            {"QUARTER": 1},
-            {"QUARTER": 2},
-            {"QUARTER": 3}
+            {"THIRD": 1},
+            {"THIRD": 2},
+            {"THIRD": 3}
             ]'
 
   templates:
@@ -45,8 +45,8 @@ spec:
             template: run-translate-desc-en
             arguments:
               parameters:
-                - name: QUARTER
-                  value: "{{item.QUARTER}}"
+                - name: THIRD
+                  value: "{{item.THIRD}}"
             # Pass the inputs to the task using "withParam"
             withParam: "{{workflow.parameters.params-conf-list-translate-desc}}"
 
@@ -61,8 +61,8 @@ spec:
             template: run-prompts-en
             arguments:
               parameters:
-                - name: QUARTER
-                  value: "{{item.QUARTER}}"
+                - name: THIRD
+                  value: "{{item.THIRD}}"
             # Pass the inputs to the task using "withParam"
             withParam: "{{workflow.parameters.params-conf-list-prompt}}"
 
@@ -77,8 +77,8 @@ spec:
             template: run-predictions-en
             arguments:
               parameters:
-                - name: QUARTER
-                  value: "{{item.QUARTER}}"
+                - name: THIRD
+                  value: "{{item.THIRD}}"
             # Pass the inputs to the task using "withParam"
             withParam: "{{workflow.parameters.params-conf-list-predictions}}"
 
@@ -144,8 +144,8 @@ spec:
 
     - name: run-translate-desc-en
       inputs:
-          parameters:
-            - name: QUARTER
+        parameters:
+          - name: THIRD
       nodeSelector:
         nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
       container:
@@ -162,7 +162,7 @@ spec:
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 2-translate-descriptions.py --description_col description_clean --title_col title_clean --languages en --quarter {{inputs.parameters.QUARTER}} --use_s3 1
+            python 2-translate-descriptions.py --description_col description_clean --title_col title_clean --languages en --third {{inputs.parameters.THIRD}} --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
@@ -255,8 +255,8 @@ spec:
 
     - name: run-prompts-en
       inputs:
-      parameters:
-        - name: QUARTER
+        parameters:
+          - name: THIRD
       nodeSelector:
         nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
       container:
@@ -272,7 +272,7 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages en --quarter {{inputs.parameters.QUARTER}} --use_s3 1
+            python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages en --third {{inputs.parameters.THIRD}} --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
@@ -365,8 +365,8 @@ spec:
 
     - name: run-predictions-en
       inputs:
-          parameters:
-            - name: QUARTER
+        parameters:
+          - name: THIRD
       nodeSelector:
         nvidia.com/gpu.product: "NVIDIA-H100-PCIe"
       container:
@@ -383,7 +383,7 @@ spec:
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 4-classif-llm.py --languages en --quarter {{inputs.parameters.QUARTER}} --use_s3 1
+            python 4-classif-llm.py --languages en --third {{inputs.parameters.THIRD}} --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
