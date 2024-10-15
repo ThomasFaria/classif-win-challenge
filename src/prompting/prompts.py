@@ -1,3 +1,7 @@
+import pandas as pd
+from langchain_community.vectorstores import Chroma
+from langchain_core.output_parsers import PydanticOutputParser
+
 from src.utils.data import extract_info
 from src.utils.mapping import lang_mapping
 
@@ -69,9 +73,23 @@ EXTRACTION_PROMPT = """\
 {format_instructions}
 """
 
+
 # Function to format documents retrieved from a dataset.
 # The function extracts specific information from the documents (based on paragraphs like 'description' and 'examples').
 def format_docs(docs: list):
+    """
+    Format the retrieved documents to be included in the prompt.
+
+    Parameters:
+    ----------
+    docs : list
+        A list of documents retrieved from the dataset.
+
+    Returns:
+    -------
+    str
+        A formatted string containing the document metadata, label, and extracted information.
+    """
     return "\n\n".join(
         [
             f"{doc.metadata['code']}: {doc.metadata['label']} - {extract_info(doc.page_content, paragraphs=['description', 'examples'])}"
@@ -79,9 +97,32 @@ def format_docs(docs: list):
         ]
     )
 
+
 # Function to create a prompt with relevant ISCO documents for classification.
 # It retrieves the most relevant documents for classification based on the job title, description, or keywords.
-def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
+def create_prompt_with_docs(
+    row: pd.Series, parser: PydanticOutputParser, retriever: Chroma, **kwargs
+):
+    """
+    Create a prompt for classifying job descriptions into ISCO codes. The prompt includes the job title, description, and relevant ISCO documents.
+
+    Parameters:
+    ----------
+    row : pd.Series
+        The row from the dataset containing job details.
+    parser : PydanticOutputParser
+        The parser for handling model responses.
+    retriever : Chroma
+        The retriever for fetching relevant ISCO documents.
+    kwargs : dict
+        Additional keyword arguments.
+
+    Returns:
+    -------
+    list
+        A list of prompts in conversational format for the classification task.
+    """
+
     task_description = "Retrieve the most relevant ISCO documents from the dataset based on the provided input by matching them with the closest ISCO classification labels."
 
     # Extract job title, description, and keywords from the dataset row.
@@ -130,9 +171,28 @@ def create_prompt_with_docs(row, parser, retriever, labels_en, **kwargs):
     # Return the complete prompt for classification in a conversational format (system role and user role).
     return [{"role": "system", "content": CLASSIF_PROMPT_SYS}, {"role": "user", "content": prompt}]
 
+
 # Function to create a translation prompt based on the job ad language.
 # It either uses the extraction prompt (for English) or translation prompt (for other languages).
-def create_translation_prompt(row, parser, **kwargs):
+def create_translation_prompt(row: pd.Series, parser: PydanticOutputParser, **kwargs):
+    """
+    Create a prompt for translating job descriptions from various languages into English.
+
+    Parameters:
+    ----------
+    row : pd.Series
+        The row from the dataset containing job details.
+    parser : PydanticOutputParser
+        The parser for handling model responses.
+    kwargs : dict
+        Additional keyword arguments.
+
+    Returns:
+    -------
+    list
+        A list of prompts in conversational format for the translation task.
+    """
+
     description = getattr(row, kwargs.get("description_column"))
     title = getattr(row, kwargs.get("title_column"))
     lang = lang_mapping.loc[lang_mapping["lang_iso_2"] == row.lang, "lang"].values[0]

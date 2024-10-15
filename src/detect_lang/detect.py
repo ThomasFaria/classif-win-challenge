@@ -1,3 +1,4 @@
+import pandas as pd
 from ftlangdetect import detect
 
 from src.utils.data import clean_text
@@ -41,7 +42,21 @@ def detect_language(text: str) -> tuple:
         raise ValueError(f"Language detection failed: {e}")
 
 
-def process_data_lang_detec(data):
+def process_data_lang_detec(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Process the input data by detecting the language of the 'description' and 'title' columns.
+
+    Parameters:
+    ----------
+    data : pd.DataFrame
+        The input data containing 'description' and 'title' columns.
+
+    Returns:
+    -------
+    pd.DataFrame
+        The processed data with additional columns 'description_lang' and 'title_lang' containing the detected language codes.
+    """
+
     # Apply the text cleaning function to both 'description' and 'title'
     data["description_clean"] = data["description"].apply(clean_text)
     data["title_clean"] = data["title"].apply(clean_text)

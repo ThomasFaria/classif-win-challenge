@@ -13,11 +13,14 @@ def get_file_system() -> s3fs.S3FileSystem:
         client_kwargs={"endpoint_url": f"https://{os.environ['AWS_S3_ENDPOINT']}"},
         key=os.environ["AWS_ACCESS_KEY_ID"],
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
-        # token=os.environ["AWS_SESSION_TOKEN"],
     )
 
 
-def extract_info(input_str, paragraphs: list):
+def extract_info(input_str: str, paragraphs: list):
+    """
+    Extract the description and examples from the input string.
+    """
+
     # Split the string by newlines
     lines = [line.strip() for line in input_str.split("\n")]
 
@@ -81,20 +84,17 @@ eol_regex = re.compile(r"\r|\n")
 multispace_regex = re.compile(r"\s\s+")
 html_regex = re.compile(r"<[^<]+?>")
 white_regex = re.compile(r"\xa0")
-punctuation_regex = re.compile(r"[^\w\s]")
-underscore_regex = re.compile(r"_")
 star_regex = re.compile(r"(\*[\s]*)+")
-# regex pour détecter les URL
 url_regex = re.compile(r"(https?://(?:www\.)?[^\s/$.?#].[^\s]*)")
 javascript_regex = re.compile(r"You need to enable JavaScript to run this app")
 captcha_regex = re.compile(r"reCAPTCHA check page")
 
-# List of man/woman writings
-abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(?m/ž\)?|\(?f/n\)?|\(?b/f\)?|\(?άν/γυν\)?|\(?м/ж\)?"
-
 
 # Function to clean text using all relevant regex
 def clean_text(text):
+    """
+    Clean text by removing HTML tags, URLs, and other irrelevant information.
+    """
     if not isinstance(text, str):
         return text
     text = html.unescape(text)

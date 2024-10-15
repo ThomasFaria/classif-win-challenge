@@ -1,6 +1,8 @@
 import json
 from typing import Optional
 
+import pandas as pd
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 from src.constants.utils import ISCO_CODES
@@ -35,14 +37,14 @@ class TranslatorResponse(BaseModel):
     )
 
 
-def process_response(row: tuple, parser, labels) -> dict:
+def process_response(row: tuple, parser: PydanticOutputParser, labels: pd.DataFrame) -> dict:
     """
     Processes a row of raw responses by parsing and validating the response,
     and then returns a dictionary with additional information.
 
     Args:
         row (tuple): A tuple representing a row of data.
-                         Should contain 'raw_responses', 'id', 'lang', and 'prompt'.
+                        Should contain 'raw_responses', 'id', 'lang', and 'prompt'.
         parser (Parser): A parser object with a `parse` method used to validate and parse the raw response.
         labels (pd.DataFrame): A DataFrame containing the label information.
                                Must have columns 'code' and 'label'.
@@ -99,7 +101,22 @@ def process_response(row: tuple, parser, labels) -> dict:
     }
 
 
-def process_translation(row: tuple, parser) -> dict:
+def process_translation(row: tuple, parser: PydanticOutputParser) -> dict:
+    """
+    Processes a row of raw translations by parsing and validating the response,
+    and then returns a dictionary with additional information.
+
+    Args:
+        row (tuple): A tuple representing a row of data.
+                        Should contain 'raw_translations' and 'id'.
+        parser (Parser): A parser object with a `parse` method used to validate and parse the raw response.
+
+    Returns:
+        dict: A dictionary containing validated and parsed response data along with additional metadata:
+              - 'id': The ID of the row.
+              - other parsed response details from `validated_response.dict()`.
+    """
+
     response = row.raw_translations  # Extract the raw response data from the row.
     row_id = row.id  # Extract the row's unique identifier.
 
