@@ -133,7 +133,6 @@ def main(
                 row,
                 parser,
                 retriever,
-                labels,
                 **{
                     "description_column": description_column,
                     "title_column": title_column,
