@@ -34,9 +34,9 @@ spec:
             git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/${GIT_USERNAME}/classif-win-challenge.git &&
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
+            export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
             python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages \
-              un en de bg hr da es et fi fr el hu ga it lv lt mt nl pl pt ro sk sl sv cs
-
+              bg cs da de el en es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un --use_s3 1
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm

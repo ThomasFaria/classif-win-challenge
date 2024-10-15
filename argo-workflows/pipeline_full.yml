@@ -162,7 +162,7 @@ spec:
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 2-translate-descriptions.py --description_col description_clean --title_col title_clean --languages en --quarter {{inputs.parameters.QUARTER}}
+            python 2-translate-descriptions.py --description_col description_clean --title_col title_clean --languages en --quarter {{inputs.parameters.QUARTER}} --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
@@ -217,7 +217,7 @@ spec:
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
             python 2-translate-descriptions.py --description_col description_clean --title_col title_clean --languages \
-              bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
+              bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un --use_s3 1
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
@@ -272,7 +272,7 @@ spec:
             cd classif-win-challenge/ &&
             pip install -r requirements.txt &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages en --quarter {{inputs.parameters.QUARTER}}
+            python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages en --quarter {{inputs.parameters.QUARTER}} --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
@@ -326,7 +326,7 @@ spec:
             pip install -r requirements.txt &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
             python 3-build-vdb.py --title_col "title_en" --description_col "description_en" --languages \
-              bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
+              bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
@@ -383,7 +383,7 @@ spec:
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 4-classif-llm.py --languages en --quarter {{inputs.parameters.QUARTER}}
+            python 4-classif-llm.py --languages en --quarter {{inputs.parameters.QUARTER}} --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
@@ -437,7 +437,7 @@ spec:
             pip install -r requirements.txt &&
             huggingface-cli login --token $HF_TOKEN &&
             export MC_HOST_s3=https://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@$AWS_S3_ENDPOINT &&
-            python 4-classif-llm.py --languages bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un
+            python 4-classif-llm.py --languages bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv un --use_s3 1
 
         volumeMounts:
           - mountPath: /dev/shm
