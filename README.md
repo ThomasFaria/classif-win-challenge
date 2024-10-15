@@ -44,7 +44,7 @@ python 4-classif-llm.py
 ```
 
 Each of the 4 steps output its results in the directory `data/processed-data/` in parquet format.
-Final stage produce the classification.csv file in the directory `data/raw-data` as well as the parquet file in `data/processed-data/`
+Final stage produce the classification.csv file in the directory `submissions/` as well as the parquet file in `data/processed-data/`
 
 ---
 ## Model used
