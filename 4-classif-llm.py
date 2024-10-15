@@ -171,4 +171,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Call the main function with parsed arguments
-    main(languages=args.languages, third=args.third)
+    main(languages=args.languages, third=args.third, use_s3=args.use_s3)
