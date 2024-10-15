@@ -89,7 +89,7 @@ url_regex = re.compile(r"(https?://(?:www\.)?[^\s/$.?#].[^\s]*)")
 javascript_regex = re.compile(r"You need to enable JavaScript to run this app")
 captcha_regex = re.compile(r"reCAPTCHA check page")
 
-# Liste des abréviations à détecter
+# List of man/woman writings
 abbreviations = r"\(?h/f\)?|\(?m/f\)?|\(?m/w\)?|\(?m/v\)?|\(?m/k\)?|\(?m/n\)?|\(?m/ž\)?|\(?f/n\)?|\(?b/f\)?|\(?άν/γυν\)?|\(?м/ж\)?"
 
 
