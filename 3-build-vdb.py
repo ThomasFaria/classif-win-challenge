@@ -202,7 +202,8 @@ if __name__ == "__main__":
     # Optional argument for specifying if S3 storage should be used
     parser.add_argument(
         "--use_s3",
-        type=bool,
+        type=int,
+        choices=[0, 1],
         required=False,
         help="Use S3 storage for reading and writing data",
     )
